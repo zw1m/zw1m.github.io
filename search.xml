@@ -4,6 +4,13 @@
     <title><![CDATA[纠正几个Linux的IO监控指标的误区]]></title>
     <url>%2F2019%2F03%2F%E7%BA%A0%E6%AD%A3%E5%87%A0%E4%B8%AALinux%E7%9A%84IO%E7%9B%91%E6%8E%A7%E6%8C%87%E6%A0%87%E7%9A%84%E8%AF%AF%E5%8C%BA%2F</url>
     <content type="text"><![CDATA[前言本文主要面向初、中级工程师，假设你已经对的Linux性能监控工具有所了解，例如top、vmstat、mpstat、iostat等。 日常工作中，碰到IO性能问题是常有的事。本文主要探讨Linux下的IO监控里容易产生误区的点。 这些误区，一方面是因为工程师想当然，不仔细看文档，不理解底层细节。另一方面是因为Linux内核和监控工具的发展，落后于存储设备硬件的发展，软硬件存在脱节，因此监控工具不能反映硬件的真实情况。 纠正这些误区，对这些监控和背后原理理解越深刻，越能评估一个系统性能的真实情况，定位和解决问题也更容易。 环境1sss 正文111 %iowait 正确：%iowait（wa）是CPU的一种IDLE，%iowait大小不能用来反映IO瓶颈。 误区：（1）%iowait高，CPU很忙。（2）%iowait高，磁盘IO瓶颈。 解释%iowait（来自mpstat）和wa（来自top、vmstat）是同一个指标，表示在一个采样周期内，CPU空闲在等待未完成的IO请求所占的白分比。iowait的产生要满足两个条件，一是进程在等io，二是等io时没有进程可运行。 误区（1）%iowait高，CPU很忙。文档已经明确显示，%iowait是一种IDLE，尤其在2.5.41以前的旧内核里，%iowait是直接统计在idle里的。既然%iowait的显示的白分比是一种IDLE，它是可以被其它进程使用的。%iowait高，CPU其实很闲，因为其它进程都在随眠。123456man vmstatwa: Time spent waiting for IO. Prior to Linux 2.5.41, included in idle.man mpstat%iowaitShow the percentage of time that the CPU or CPUs were idle during which the system had an outstanding disk I/O request. 实验验证 误区（2）%iowait高，磁盘IO瓶颈。由误区（1）可以知道，这个指标是描述CPU的IDLE的，它与磁盘IO是否到达瓶颈一点关系都没有，它都不是一个用来描述磁盘IO性能的指标。 实验验证总结%iowait大小受CPU的负载变化而变化，这个指标如果很大，除了能说明CPU很闲在等待IO以外，并不能反映IO压力或者瓶颈。分析IO瓶颈，关键是去看Linux的IO的监控指标是否打满了存储设备的性能，因此必须对存储设备在当前IO模型下具备的真实性能有所了解。 原理可以参考这个文章：朱辉(茶水)： Linux Kernel iowait 时间的代码原理 await 正确：表示IO从创建到完成的平均时间，包含IO排队时间+存储设备处理时间。 误区：（1）混淆%iowait和await。（2）认为await高等于磁盘慢。解释 svctm 正确：iostat里的svctm并不能准确反映存储设备的处理时间。 误区：svctm就是存储设备硬件处理IO的时间。解释 %util 正确：iostat里的%util并不能准确反映存储设备负载。 误区：%util就是存储设备硬件的使用率，和CPU使用率一样。解释]]></content>
+      <categories>
+        <category>性能分析</category>
+      </categories>
+      <tags>
+        <tag>IO</tag>
+        <tag>性能监控</tag>
+      </tags>
   </entry>
   <entry>
     <title><![CDATA[你好]]></title>
