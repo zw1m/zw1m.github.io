@@ -377,14 +377,17 @@
 <h5 id="实验验证"><a href="#实验验证" class="headerlink" title="实验验证"></a>实验验证</h5><h5 id="误区（2）-iowait高，磁盘IO瓶颈。"><a href="#误区（2）-iowait高，磁盘IO瓶颈。" class="headerlink" title="误区（2）%iowait高，磁盘IO瓶颈。"></a>误区（2）%iowait高，磁盘IO瓶颈。</h5><p>由误区（1）可以知道，这个指标是描述CPU的IDLE的，它与磁盘是否到达瓶颈一点关系都没有，它都不是一个磁盘指标，更不能用来描述磁盘性能。</p>
 <h5 id="实验验证-1"><a href="#实验验证-1" class="headerlink" title="实验验证"></a>实验验证</h5><h5 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h5><p>%iowait大小受CPU的负载变化而变化，因此这个指标如果很大，除了能说明CPU很闲在等IO以外，并不能直接反映出IO瓶颈。分析IO瓶颈，关键是去看Linux的IO的监控指标是否打满了存储设备的性能，因此必须对存储设备在当前IO模型下具备的性能有所了解。</p>
 <p>原理可以参考这个文章：<br><a href="https://mp.weixin.qq.com/s?__biz=MzAwMDUwNDgxOA==&amp;mid=2652663269&amp;idx=1&amp;sn=f0bddde33fd4c57bd708b3b14a004e98&amp;chksm=810f2b78b678a26e6e36b9e1c077d35af1ca7fca9c1b4f241d81d4618af949551079dc364a7f&amp;scene=21#wechat_redirect" target="_blank" rel="noopener">朱辉(茶水)： Linux Kernel iowait 时间的代码原理</a></p>
+<hr>
 <h3 id="await"><a href="#await" class="headerlink" title="await"></a>await</h3><ul>
 <li>正确：表示IO从创建到完成的平均时间，包含IO排队时间+存储设备处理时间。</li>
 <li>误区：（1）混淆%iowait和await。（2）认为await高等于磁盘慢。<h4 id="解释-1"><a href="#解释-1" class="headerlink" title="解释"></a>解释</h4></li>
 </ul>
+<hr>
 <h3 id="svctm"><a href="#svctm" class="headerlink" title="svctm"></a>svctm</h3><ul>
 <li>正确：iostat里的svctm并不能准确反映存储设备的处理时间。</li>
 <li>误区：svctm就是存储设备硬件处理IO的时间。<h4 id="解释-2"><a href="#解释-2" class="headerlink" title="解释"></a>解释</h4></li>
 </ul>
+<hr>
 <h3 id="util"><a href="#util" class="headerlink" title="%util"></a>%util</h3><ul>
 <li>正确：iostat里的%util并不能准确反映存储设备负载。</li>
 <li>误区：%util就是存储设备硬件的使用率，和CPU使用率一样。<h4 id="解释-3"><a href="#解释-3" class="headerlink" title="解释"></a>解释</h4></li>
