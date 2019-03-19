@@ -369,7 +369,8 @@
 <p>这些误区，一方面是因为工程师想当然，不仔细看文档，不理解底层细节。另一方面是因为Linux内核和监控工具的发展，落后于存储设备硬件的发展，软硬件存在脱节，因此监控工具不能反映硬件的真实情况。</p>
 <p>纠正这些误区，对这些监控和背后原理理解越深刻，越能评估一个系统性能的真实情况，定位和解决问题也更容易。</p>
 <h2 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sss</span><br></pre></td></tr></table></figure>
-<h2 id="正文"><a href="#正文" class="headerlink" title="正文"></a>正文</h2><h3 id="iowait"><a href="#iowait" class="headerlink" title="%iowait"></a>%iowait</h3><ul>
+<h2 id="正文"><a href="#正文" class="headerlink" title="正文"></a>正文</h2><hr>
+<h3 id="iowait"><a href="#iowait" class="headerlink" title="%iowait"></a>%iowait</h3><ul>
 <li>正确：%iowait（wa）是CPU的一种IDLE，%iowait大小不能用来反映IO瓶颈。</li>
 <li>误区：（1）%iowait高，CPU很忙。（2）%iowait高，磁盘IO瓶颈。</li>
 </ul>
