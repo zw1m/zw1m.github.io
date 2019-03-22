@@ -66,7 +66,7 @@
 
 
 
-  <meta name="keywords" content="Hexo, NexT">
+  <meta name="keywords" content="VPN,wireguard,">
 
 
 
@@ -77,18 +77,18 @@
 
 
 
-<meta name="description" content="个人小站。致力于为运维及研发提供准确、靠谱的运维资料和经验。">
-<meta name="keywords" content="运维、DevOPS、性能、体系、架构、x86">
-<meta property="og:type" content="website">
-<meta property="og:title" content="分类">
-<meta property="og:url" content="http://blog.zw1m.com/categories/index.html">
+<meta name="description" content="场景这是我个人的需求，但是也有借鉴意义。需要在外部连接家里的机器做测试，家里路由器拨号之后没有公网IP，所以使用一台具有公网IP的阿里云ECS服务器作为中转，打通内网的机器和阿里云服务器。在以往，我会使用strongswan来搭建IKEv2的VPN来实现这个需求，但是现在有更简单好用的wireguard了。 wireguard介绍毕竟是VPN软件，所以需要翻墙访问。wireguard官网wireg">
+<meta name="keywords" content="VPN,wireguard">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用wireguard打通内网机器和外网云服务器">
+<meta property="og:url" content="http://blog.zw1m.com/2019/03/使用wireguard打通内网机器和外网云服务器/index.html">
 <meta property="og:site_name" content="运维深处">
-<meta property="og:description" content="个人小站。致力于为运维及研发提供准确、靠谱的运维资料和经验。">
+<meta property="og:description" content="场景这是我个人的需求，但是也有借鉴意义。需要在外部连接家里的机器做测试，家里路由器拨号之后没有公网IP，所以使用一台具有公网IP的阿里云ECS服务器作为中转，打通内网的机器和阿里云服务器。在以往，我会使用strongswan来搭建IKEv2的VPN来实现这个需求，但是现在有更简单好用的wireguard了。 wireguard介绍毕竟是VPN软件，所以需要翻墙访问。wireguard官网wireg">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-03-20T02:35:48.995Z">
+<meta property="og:updated_time" content="2019-03-22T11:38:29.526Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="分类">
-<meta name="twitter:description" content="个人小站。致力于为运维及研发提供准确、靠谱的运维资料和经验。">
+<meta name="twitter:title" content="使用wireguard打通内网机器和外网云服务器">
+<meta name="twitter:description" content="场景这是我个人的需求，但是也有借鉴意义。需要在外部连接家里的机器做测试，家里路由器拨号之后没有公网IP，所以使用一台具有公网IP的阿里云ECS服务器作为中转，打通内网的机器和阿里云服务器。在以往，我会使用strongswan来搭建IKEv2的VPN来实现这个需求，但是现在有更简单好用的wireguard了。 wireguard介绍毕竟是VPN软件，所以需要翻墙访问。wireguard官网wireg">
 
 
 
@@ -118,13 +118,13 @@
 
 
 
-  <link rel="canonical" href="http://blog.zw1m.com/categories/">
+  <link rel="canonical" href="http://blog.zw1m.com/2019/03/使用wireguard打通内网机器和外网云服务器/">
 
 
 
 
 
-  <title>分类 | 运维深处</title>
+  <title>使用wireguard打通内网机器和外网云服务器 | 运维深处</title>
   
 
 
@@ -281,40 +281,172 @@
 
   <div id="posts" class="posts-expand">
     
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/03/使用wireguard打通内网机器和外网云服务器/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Roger K">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="运维深处">
+    </span>
+
     
-    
-    <div class="post-block page">
       <header class="post-header">
 
-	<h1 class="post-title" itemprop="name headline">分类</h1>
-
-
-
-</header>
-
-      
-      
-      
-      <div class="post-body">
         
         
-          <div class="category-all-page">
-            <div class="category-all-title">
-                目前共计 3 个分类
-            </div>
-            <div class="category-all">
-              <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/体系结构/">体系结构</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/性能分析/">性能分析</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/网络/">网络</a><span class="category-list-count">1</span></li></ul>
-            </div>
-          </div>
+          <h1 class="post-title" itemprop="name headline">使用wireguard打通内网机器和外网云服务器</h1>
         
-      </div>
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-22T19:37:13+08:00">
+                2019-03-22
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/网络/" itemprop="url" rel="index">
+                    <span itemprop="name">网络</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
       
       
+
+      
+        <h3 id="场景"><a href="#场景" class="headerlink" title="场景"></a>场景</h3><p>这是我个人的需求，但是也有借鉴意义。<br>需要在外部连接家里的机器做测试，家里路由器拨号之后没有公网IP，所以使用一台具有公网IP的阿里云ECS服务器作为中转，打通内网的机器和阿里云服务器。<br>在以往，我会使用strongswan来搭建IKEv2的VPN来实现这个需求，但是现在有更简单好用的wireguard了。</p>
+<h3 id="wireguard介绍"><a href="#wireguard介绍" class="headerlink" title="wireguard介绍"></a>wireguard介绍</h3><p>毕竟是VPN软件，所以需要翻墙访问。<br><a href="https://www.wireguard.com/" target="_blank" rel="noopener">wireguard官网</a><br><a href="https://www.wireguard.com/presentations/" target="_blank" rel="noopener">wireguard官网的视频介绍</a></p>
+<h3 id="配置方式"><a href="#配置方式" class="headerlink" title="配置方式"></a>配置方式</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">A机器(家里)内网(192.168.31.0/24)</span><br><span class="line">B机器(ECS)内网(172.16.100.0/24)</span><br><span class="line"></span><br><span class="line">分别在每个机器执行:</span><br><span class="line"></span><br><span class="line">yum install wireguard-dkms wireguard-tools -y</span><br><span class="line">mkdir -p  /etc/wireguard</span><br><span class="line">umask 077</span><br><span class="line">cd  /etc/wireguard</span><br><span class="line">wg genkey | tee privatekey | wg pubkey &gt; publickey</span><br><span class="line">vim wg0.conf 内容如下:</span><br><span class="line"></span><br><span class="line">[Interface]</span><br><span class="line">PrivateKey = 本机的privatekey</span><br><span class="line">ListenPort = 2503</span><br><span class="line">PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE</span><br><span class="line">PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE</span><br><span class="line">MTU = 1500</span><br><span class="line">[Peer]</span><br><span class="line">PublicKey = 远端的publickey</span><br><span class="line">Endpoint = 远端的ip:2503（公网ip，至少需要一端有，没有就不写）</span><br><span class="line">AllowedIPs = 远端的网段</span><br><span class="line"></span><br><span class="line">启动</span><br><span class="line">systemctl start wg-quick@wg0.service </span><br><span class="line">echo &apos;net.ipv4.ip_forward = 1&apos;  &gt;&gt; /etc/sysctl.conf </span><br><span class="line">启用转发</span><br><span class="line">sysctl -p </span><br><span class="line"></span><br><span class="line">分别A,B机器启动, 然后ping对方, 谁先ping, 谁就发起连接。</span><br><span class="line">由于我的环境里，只有阿里云ECS才有公网IP，所以我只能由家里机器发起ping。</span><br></pre></td></tr></table></figure>
+<p>要自动连接，就写个crontab的ping，每分钟ping一次好了。<br>这里我使用家里的机器，ping阿里云服务器的内网IP，即可自动建立连接。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# cat /etc/crontab </span><br><span class="line">SHELL=/bin/bash</span><br><span class="line">PATH=/sbin:/bin:/usr/sbin:/usr/bin</span><br><span class="line">MAILTO=</span><br><span class="line"></span><br><span class="line"># For details see man 4 crontabs</span><br><span class="line"></span><br><span class="line"># Example of job definition:</span><br><span class="line"># .---------------- minute (0 - 59)</span><br><span class="line"># |  .------------- hour (0 - 23)</span><br><span class="line"># |  |  .---------- day of month (1 - 31)</span><br><span class="line"># |  |  |  .------- month (1 - 12) OR jan,feb,mar,apr ...</span><br><span class="line"># |  |  |  |  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat</span><br><span class="line"># |  |  |  |  |</span><br><span class="line"># *  *  *  *  * user-name  command to be executed</span><br><span class="line">*  *  *  *  * root  ping -c1 172.16.100.38 &amp;&gt; /dev/null</span><br><span class="line"></span><br><span class="line">wg show 查看状态</span><br></pre></td></tr></table></figure></p>
+<p>由于wireguard是内核模块，需要注意内核各个rpm包小版本一致。<br>例如我这里，都是3.10.0-957.5.1.el7.x86_64这个小版本。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# rpm -qa | grep kernel</span><br><span class="line">kernel-3.10.0-957.5.1.el7.x86_64</span><br><span class="line">kernel-headers-3.10.0-957.5.1.el7.x86_64</span><br><span class="line">kernel-tools-libs-3.10.0-957.5.1.el7.x86_64</span><br><span class="line">kernel-devel-3.10.0-957.5.1.el7.x86_64</span><br><span class="line">kernel-debuginfo-3.10.0-957.5.1.el7.x86_64</span><br><span class="line">kernel-tools-3.10.0-957.5.1.el7.x86_64</span><br><span class="line">kernel-debuginfo-common-x86_64-3.10.0-957.5.1.el7.x86_64</span><br></pre></td></tr></table></figure></p>
+
       
     </div>
     
     
     
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/VPN/" rel="tag"># VPN</a>
+          
+            <a href="/tags/wireguard/" rel="tag"># wireguard</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/03/数据怎样才算真正落盘/" rel="next" title="数据怎样才算真正落盘">
+                <i class="fa fa-chevron-left"></i> 数据怎样才算真正落盘
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
   </div>
 
 
@@ -352,8 +484,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
 
-      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+      <section class="site-overview-wrap sidebar-panel">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
@@ -429,6 +570,22 @@
         </div>
       </section>
 
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#场景"><span class="nav-number">1.</span> <span class="nav-text">场景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#wireguard介绍"><span class="nav-number">2.</span> <span class="nav-text">wireguard介绍</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#配置方式"><span class="nav-number">3.</span> <span class="nav-text">配置方式</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
       
 
       
