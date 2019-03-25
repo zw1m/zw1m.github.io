@@ -440,7 +440,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/03/数据怎样才算真正落盘/">
+    <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/03/数据落盘-全链路分析刷盘命令/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Roger K">
@@ -459,7 +459,7 @@
         
           <h1 class="post-title" itemprop="name headline">
                 
-                <a class="post-title-link" href="/2019/03/数据怎样才算真正落盘/" itemprop="url">数据怎样才算真正落盘</a></h1>
+                <a class="post-title-link" href="/2019/03/数据落盘-全链路分析刷盘命令/" itemprop="url">数据落盘-全链路分析刷盘命令</a></h1>
         
 
         <div class="post-meta">
@@ -533,16 +533,17 @@
       
         
           
-            <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>落盘，顾名思义，就是数据写入最终的非易失（Non-volatile）的存储介质，例如HDD（磁性介质）、SSD（半导体介质）等，当服务器故障或异常掉电时，数据做到不丢失。<br>由于硬件故障是经常发生的，对数据安全性要求高的场景，例如金融类的数据库、日志、消息等，数据落盘非常重要，有时甚至是一个企业的底线。<br>本文尝试从底层硬件开始，向上逐层讲到应用，来说明数据落盘的路径，以及如何保证数据落盘，并且重点放在实验验证。</p>
+            <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>数据落盘，顾名思义，就是数据写入最终的非易失（Non-volatile）的存储介质，例如HDD（磁性介质）、SSD（半导体介质）等，当服务器故障或异常掉电时，数据做到不丢失。<br>由于硬件故障是经常发生的，对数据安全性要求高的场景，例如金融类的数据库、日志、消息等，数据落盘非常重要，有时甚至是一个企业的底线。<br>本文尝试从底层硬件开始，向上逐层讲到应用，来说明数据落盘的路径，以及如何保证数据落盘，并且重点放在实验验证。</p>
 <h4 id="重点问题及知识点"><a href="#重点问题及知识点" class="headerlink" title="重点问题及知识点"></a>重点问题及知识点</h4><ul>
 <li>当应用发起写入数据的请求返回OK时，数据是否真的到达了磁盘，有哪些因素在起作用？</li>
 <li>应用程序的写入参数、文件系统参数、硬件参数是如何保证数据落盘的？</li>
 <li>今天的x86硬件体系结构，服务器硬件层面，有哪些硬件write cache，断电是否数据丢失？</li>
 <li>数据落盘，很重要的“刷盘”命令，硬件层面到底是什么？</li>
+<li>掉电保护和“刷盘”的关系是什么，是否就不用“刷盘”了？</li>
 <li>SCSI和ATA到底是什么关系，为什么我用的SATA盘识别成SCSI设备？</li>
 </ul>
 <h3 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h3><p>还是我的这台机器，sdb是SATA SSD，sdc是SATA HDD。它们连接在PCH（南桥），走AHCI控制器。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">Summary:	ASRock Z370M-ITX/ac, 1 x Core i5-8400 2.80GHz, 15.2GB / 16GB 2400MT/s DDR4</span><br><span class="line">System:		ASRock Z370M-ITX/ac</span><br><span class="line">Processors:	1 x Core i5-8400 2.80GHz 100MHz FSB (6 cores)</span><br><span class="line">Memory:		15.2GB / 16GB 2400MT/s DDR4 == 2 x 8GB</span><br><span class="line">Disk:		sda (scsi0): 240GB (7%) JBOD == 1 x 240GB Gen3 signaling speed (6.0Gb/s) LITEON-EGT-240N9S</span><br><span class="line">Disk:		sdb: 100GB JBOD == 1 x 100GB SATA 300MB/s INTEL-SSDSA2BZ100G3</span><br><span class="line">Disk:		sdc (scsi2): 1.0TB JBOD == 1 x 1.0TB Gen3 signaling speed (6.0Gb/s) WDC-WD10JPLX-00MBPT1</span><br><span class="line">Disk-Control:	ahci0: Intel 200 Series PCH SATA controller [AHCI mode]</span><br><span class="line">Network:	00:1f.6 (e1000e0): Intel Ethernet Connection (2) I219-V</span><br><span class="line">Network:	02:00.0 (igb0): Intel I211 Gigabit</span><br><span class="line">Network:	03:00.0 (iwlwifi0): Intel Dual Band Wireless-AC 3168NGW [Stone Peak]</span><br><span class="line">OS:		CentOS Linux 7.6.1810 (Core) , Linux 3.10.0-957.5.1.el7.x86_64 x86_64, 64-bit</span><br><span class="line">BIOS:		AMI P1.50 11/16/2017</span><br><span class="line">Hostname:	MiWiFi-R1CM-srv</span><br></pre></td></tr></table></figure></p>
-<h3 id="硬件层面"><a href="#硬件层面" class="headerlink" title="硬件层面"></a>硬件层面</h3><h4 id="硬件存储体系简述"><a href="#硬件存储体系简述" class="headerlink" title="硬件存储体系简述"></a>硬件存储体系简述</h4><p>在x86服务器上，本地存储介质的连接方式主要有以下几种，<-> 表示互相连接。</-></p>
+<h3 id="硬件层"><a href="#硬件层" class="headerlink" title="硬件层"></a>硬件层</h3><h4 id="硬件存储体系简述"><a href="#硬件存储体系简述" class="headerlink" title="硬件存储体系简述"></a>硬件存储体系简述</h4><p>在x86服务器上，本地存储介质的连接方式主要有以下几种，<-> 表示互相连接。</-></p>
 <ul>
 <li>内存 <-> CPU <-> Raid/HBA卡 <-> SATA/SAS HDD/SSD</-></-></-></li>
 <li>内存 <-> CPU <-> PCH <-> SATA HDD/SSD</-></-></-></li>
@@ -557,7 +558,7 @@
 <p>在ATA Command Set里，定义了FLUSH CACHE (E7h) 和 FLUSH CACHE EXT (EAh) 这两个指令用于刷盘。<br>这里FLUSH_CACHE是用于支持28bit LBA长度的命令的存储设备的，最大137GB硬盘，目前已经淘汰。<br>今天的刷盘命令，都是指FLUSH_CACHE_EXT，即48bit LBA长度的命令。<br>我们可以看看行业规范如何定义这个命令：</p>
 <p>The FLUSH CACHE EXT command requests the device to flush the volatile write cache. If there is data in the volatile write cache, that data shall be written to the non-volatile media. This command shall not indicate completion until the data is flushed to the non-volatile media or an error occurs. If the volatile write cache is disabled or no volatile write cache is present, the device shall indicate command completion without error.</p>
 <p>链接：<a href="http://www.t13.org/documents/UploadedDocuments/docs2016/di529r14-ATAATAPI_Command_Set_-_4.pdf" target="_blank" rel="noopener">ATAATAPI_Command_Set</a></p>
-<h4 id="掉电保护："><a href="#掉电保护：" class="headerlink" title="掉电保护："></a>掉电保护：</h4><p>刷盘这个指令当时是为了解决HDD掉电write cache数据一定丢失的问题，在Nand介质出现以后，引入了掉电数据保护功能。<br>掉电数据保护 power loss protection (PLP)，指的是服务器异常断电时，存储设备能把write cache里的数据写回介质。<br>以下总结适用于普通的x86服务器，以下都是Write cache enable场景。</p>
+<h4 id="掉电保护"><a href="#掉电保护" class="headerlink" title="掉电保护"></a>掉电保护</h4><p>刷盘这个指令当时是为了解决HDD掉电write cache数据一定丢失的问题，在Nand介质出现以后，引入了掉电数据保护功能。<br>掉电数据保护 power loss protection (PLP)，指的是服务器异常断电时，存储设备能把write cache里的数据写回介质。<br>以下总结适用于普通的x86服务器，以下都是Write cache enable场景。</p>
 <ul>
 <li>企业级SSD、包含SATA/SAS/PCIe/NVMe SSD等，通过超级电容保证断电时把write cache中的数据写回Nand。</li>
 <li>消费级SSD由于面向的客户群体及成本考虑，不带掉电数据保护，掉电时cache数据存在丢失几率。</li>
@@ -572,13 +573,13 @@
 <p>你的设备是否支持掉电保护，请以你实际的硬件设备为准，在引入生产之前，查看供应商的测试报告和自己进行测试。</p>
 <h4 id="什么时候需要刷盘"><a href="#什么时候需要刷盘" class="headerlink" title="什么时候需要刷盘"></a>什么时候需要刷盘</h4><p>如果不支持掉电保护同时write cache enable，就需要刷盘，也就是下发FLUSH_CACHE_EXT，并等待这条指令返回OK，才可以认为数据落盘。</p>
 <h3 id="驱动层"><a href="#驱动层" class="headerlink" title="驱动层"></a>驱动层</h3><p>在硬件（包含硬件firmware）之上，就是驱动层了，由于我用的是SATA HDD/SSD，ATA驱动是SCSI子系统的一部分，所以这里重点看SCSI子系统如何下发FLUSH_CACHE_EXT命令。如果你使用的是PCIe/NVMe SSD，则不经过SCSI子系统，NVMe驱动直接到块设备层。</p>
-<p>关于SCSI子系统、NVMe的IO路径，可以参考这幅著名的Linux IO stack图。<br><a href="https://www.thomas-krenn.com/en/wiki/Linux_Storage_Stack_Diagram" target="_blank" rel="noopener">Linux Storage Stack Diagram
+<p>关于SCSI子系统、NVMe的IO路径，可以参考这幅著名的Linux IO stack图。<br>连接：<a href="https://www.thomas-krenn.com/en/wiki/Linux_Storage_Stack_Diagram" target="_blank" rel="noopener">Linux Storage Stack Diagram
 </a></p>
 <h4 id="SCSI和ATA的转换"><a href="#SCSI和ATA的转换" class="headerlink" title="SCSI和ATA的转换"></a>SCSI和ATA的转换</h4><p>这里有一个非常关键的知识点：在Linux内核里，除了NVMe以外，存储设备都是在SCSI体系内管理的。应用层的读写操作，会以bio的形式提交给block层，然后，block会把bio转换成request，并把该request加入到专为某个SCSI device服务的request queue中，接下来会有内核线程适时地从该queue中摘取request，并转换成SCSI cmd，再转换成ATA cmd，最终交由AHCI Controller（对于AHCI，实际上会把ATA cmd转换成FIS结构）发向硬盘执行。<br>参考：<a href="http://www.cnblogs.com/raymondpang/articles/4469500.html" target="_blank" rel="noopener">request到ATA cmd的转换过程</a></p>
 <p>我们接下来看看下发的SCSI的具体指令，打开scsi的日志信息，注意这里是-1。<br>参考：<a href="https://blog.csdn.net/fhqfghgdx1993/article/details/79915918" target="_blank" rel="noopener">Linux 开启 SCSI 日志调试功能</a><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">scsi_logging_level 值可以在 boot 命令行设置也可以开启设备后在 /proc 文件系统中设置：</span><br><span class="line">-1   - Enable scsi events to syslog.         // 开启所有scsi log</span><br><span class="line">0    - Disable scsi events to syslog.        // 关闭所有scsi log</span><br><span class="line">命令:</span><br><span class="line">    echo 0/-1 &gt; /proc/sys/dev/scsi/logging_level</span><br></pre></td></tr></table></figure></p>
 <p>我们知道sync命令就有刷盘的功能，执行一次再看看dmesg日志。这里下发了CDB 35H<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[47505.162954] sd 0:0:0:0: [sda] tag#5 Send: scmd 0xffff97b61d238fc0</span><br><span class="line">[47505.162965] sd 0:0:0:0: [sda] tag#5 CDB: Synchronize Cache(10) 35 00 00 00 00 00 00 00 00 00</span><br><span class="line">[47505.163957] sd 0:0:0:0: [sda] tag#5 Done: SUCCESS Result: hostbyte=DID_OK driverbyte=DRIVER_OK</span><br><span class="line">[47505.163974] sd 0:0:0:0: [sda] tag#5 CDB: Synchronize Cache(10) 35 00 00 00 00 00 00 00 00 00</span><br><span class="line">[47505.163985] sd 0:0:0:0: [sda] tag#5 scsi host busy 1 failed 0</span><br><span class="line">[47505.164003] sd 0:0:0:0: Notifying upper driver of completion (result 0)</span><br><span class="line">[47505.164013] sd 0:0:0:0: [sda] tag#5 sd_done: completed 0 of 0 bytes</span><br><span class="line">[47505.164023] sd 0:0:0:0: [sda] tag#5 0 sectors total, 0 bytes done.</span><br></pre></td></tr></table></figure></p>
 <p>在SCSI命令集里，35h指令对应的是SYNCHRONIZE CACHE，也就是刷盘。<br>The SYNCHRONIZE CACHE (10) command (see table 199) requests that the device server ensure that the specified logical blocks have their most recent data values recorded in non-volatile cache and/or on the medium.<br>参考：<a href="https://www.seagate.com/files/staticfiles/support/docs/manual/Interface%20manuals/100293068k.pdf" target="_blank" rel="noopener">SCSI Commands Reference Manual</a></p>
-<h4 id="刷盘命令的转换"><a href="#刷盘命令的转换" class="headerlink" title="刷盘命令的转换"></a>刷盘命令的转换</h4><p>SCSI的SYNCHRONIZE CACHE，ATA的FLUSH CACHE EXT，这是两条刷盘命令。<br>我用的是SATA HDD/SSD，是在SCSI体系里使用ATA设备，刷盘命令也需要转换。<br>通过搜索官方文档，可以看到libata-scsi.c里的ata_scsi_flush_xlat函数，就是做这个事。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Translate SCSI SYNCHRONIZE CACHE command</span><br><span class="line"></span><br><span class="line">Description</span><br><span class="line">Sets up an ATA taskfile to issue FLUSH CACHE or FLUSH CACHE EXT.</span><br></pre></td></tr></table></figure></p>
+<h4 id="刷盘命令的转换"><a href="#刷盘命令的转换" class="headerlink" title="刷盘命令的转换"></a>刷盘命令的转换</h4><p>SCSI的SYNCHRONIZE CACHE，ATA的FLUSH CACHE EXT，这是两条刷盘命令。<br>我用的是SATA HDD/SSD，是在SCSI体系里使用ATA设备，刷盘命令也需要转换。<br>通过搜索官方文档，可以看到libata-scsi.c里的ata_scsi_flush_xlat函数，就是做这个事。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">ata_scsi_flush_xlat</span><br><span class="line">Translate SCSI SYNCHRONIZE CACHE command</span><br><span class="line"></span><br><span class="line">Description</span><br><span class="line">Sets up an ATA taskfile to issue FLUSH CACHE or FLUSH CACHE EXT.</span><br></pre></td></tr></table></figure></p>
 <p>参考：<a href="https://www.kernel.org/doc/html/latest/driver-api/libata.html#c.ata_scsi_flush_xlat" target="_blank" rel="noopener">The Linux driver implementer’s API guide » libATA Developer’s Guide</a></p>
 <p>跟踪</p>
 <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">用systemtap可以很容易找到探测点</span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# stap -L &apos;module(&quot;libata&quot;).function(&quot;ata_scsi_flush_xlat&quot;)&apos;</span><br><span class="line">module(&quot;libata&quot;).function(&quot;ata_scsi_flush_xlat@drivers/ata/libata-scsi.c:1434&quot;) $qc:struct ata_queued_cmd* $tf:struct ata_taskfile*</span><br></pre></td></tr></table></figure>
@@ -592,6 +593,8 @@
 <li>bio转换成request，request转换成SCSI命令，SCSI命令转换为ATA命令，AHCI把ATA命令转换为FIS结构发向硬盘。</li>
 <li>libata-scsi.c里的ata_scsi_flush_xlat函数进行刷盘命令从SCSI到ATA的转换。</li>
 </ul>
+<h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><p>在文章引用了很多文章，这里附上额外的一些参考，一并致谢。</p>
+<p><a href="https://unix.stackexchange.com/questions/144561/in-what-sense-does-sata-talk-scsi-how-much-is-shared-between-scsi-and-ata" target="_blank" rel="noopener">In what sense does SATA “talk” SCSI? How much is shared between SCSI and ATA?</a></p>
 
           
         
