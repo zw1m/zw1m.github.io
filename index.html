@@ -293,6 +293,147 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/03/全链路分析数据落盘机制/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Roger K">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="运维深处">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/全链路分析数据落盘机制/" itemprop="url">全链路分析数据落盘机制</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-25T11:37:39+08:00">
+                2019-03-25
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/体系结构/" itemprop="url" rel="index">
+                    <span itemprop="name">体系结构</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/03/使用wireguard打通内网机器和外网云服务器/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -392,209 +533,6 @@
 <h3 id="配置方式"><a href="#配置方式" class="headerlink" title="配置方式"></a>配置方式</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">A机器(家里)内网(192.168.31.0/24)</span><br><span class="line">B机器(ECS)内网(172.16.100.0/24)</span><br><span class="line"></span><br><span class="line">分别在每个机器执行:</span><br><span class="line">yum install -y epel-release</span><br><span class="line">curl -Lo /etc/yum.repos.d/wireguard.repo https://copr.fedorainfracloud.org/coprs/jdoss/wireguard/repo/epel-7/jdoss-wireguard-epel-7.repo</span><br><span class="line"></span><br><span class="line">yum install wireguard-dkms wireguard-tools -y</span><br><span class="line">mkdir -p  /etc/wireguard</span><br><span class="line">umask 077</span><br><span class="line">cd  /etc/wireguard</span><br><span class="line">wg genkey | tee privatekey | wg pubkey &gt; publickey</span><br><span class="line">vim wg0.conf 内容如下:</span><br><span class="line"></span><br><span class="line">[Interface]</span><br><span class="line">PrivateKey = 本机的privatekey</span><br><span class="line">ListenPort = 2503</span><br><span class="line">PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE</span><br><span class="line">PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE</span><br><span class="line">MTU = 1500</span><br><span class="line">[Peer]</span><br><span class="line">PublicKey = 远端的publickey</span><br><span class="line">Endpoint = 远端的ip:2503（公网ip，至少需要一端有，没有就不写）</span><br><span class="line">AllowedIPs = 远端的网段</span><br><span class="line"></span><br><span class="line">启动</span><br><span class="line">systemctl start wg-quick@wg0.service </span><br><span class="line">echo &apos;net.ipv4.ip_forward = 1&apos;  &gt;&gt; /etc/sysctl.conf </span><br><span class="line">启用转发</span><br><span class="line">sysctl -p </span><br><span class="line"></span><br><span class="line">分别A,B机器启动, 然后ping对方, 谁先ping, 谁就发起连接。</span><br><span class="line">由于我的环境里，只有阿里云ECS才有公网IP，所以我只能由家里机器发起ping。</span><br><span class="line">配置上开机启动服务。</span><br><span class="line">systemctl enable wg-quick@wg0.service</span><br></pre></td></tr></table></figure>
 <p>要开机自动连接到阿里云，就写个crontab的ping，每分钟ping一次好了。<br>这里我使用家里的机器，ping阿里云服务器的内网IP，即可自动建立连接。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# cat /etc/crontab </span><br><span class="line">SHELL=/bin/bash</span><br><span class="line">PATH=/sbin:/bin:/usr/sbin:/usr/bin</span><br><span class="line">MAILTO=</span><br><span class="line"></span><br><span class="line"># For details see man 4 crontabs</span><br><span class="line"></span><br><span class="line"># Example of job definition:</span><br><span class="line"># .---------------- minute (0 - 59)</span><br><span class="line"># |  .------------- hour (0 - 23)</span><br><span class="line"># |  |  .---------- day of month (1 - 31)</span><br><span class="line"># |  |  |  .------- month (1 - 12) OR jan,feb,mar,apr ...</span><br><span class="line"># |  |  |  |  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat</span><br><span class="line"># |  |  |  |  |</span><br><span class="line"># *  *  *  *  * user-name  command to be executed</span><br><span class="line">*  *  *  *  * root  ping -c1 172.16.100.38 &amp;&gt; /dev/null</span><br><span class="line"></span><br><span class="line">wg show 查看状态</span><br></pre></td></tr></table></figure></p>
 <p>由于wireguard是内核模块，需要注意内核各个rpm包小版本一致。<br>例如我这里，都是3.10.0-957.5.1.el7.x86_64这个小版本。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# rpm -qa | grep kernel</span><br><span class="line">kernel-3.10.0-957.5.1.el7.x86_64</span><br><span class="line">kernel-headers-3.10.0-957.5.1.el7.x86_64</span><br><span class="line">kernel-tools-libs-3.10.0-957.5.1.el7.x86_64</span><br><span class="line">kernel-devel-3.10.0-957.5.1.el7.x86_64</span><br><span class="line">kernel-debuginfo-3.10.0-957.5.1.el7.x86_64</span><br><span class="line">kernel-tools-3.10.0-957.5.1.el7.x86_64</span><br><span class="line">kernel-debuginfo-common-x86_64-3.10.0-957.5.1.el7.x86_64</span><br></pre></td></tr></table></figure></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/03/数据落盘-全链路分析刷盘命令/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Roger K">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="运维深处">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/数据落盘-全链路分析刷盘命令/" itemprop="url">数据落盘-全链路分析刷盘命令</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-20T11:25:43+08:00">
-                2019-03-20
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/体系结构/" itemprop="url" rel="index">
-                    <span itemprop="name">体系结构</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>数据落盘，顾名思义，就是数据写入最终的非易失（Non-volatile）的存储介质，例如HDD（磁性介质）、SSD（半导体介质）等，当服务器故障或异常掉电时，数据做到不丢失。<br>由于硬件故障是经常发生的，对数据安全性要求高的场景，例如金融类的数据库、日志、消息等，数据落盘非常重要，有时甚至是一个企业的底线。<br>本文尝试从底层硬件开始，向上逐层讲到应用，来说明数据落盘的路径，以及如何保证数据落盘，并且重点放在实验验证。</p>
-<h4 id="重点问题及知识点"><a href="#重点问题及知识点" class="headerlink" title="重点问题及知识点"></a>重点问题及知识点</h4><ul>
-<li>当应用发起写入数据的请求返回OK时，数据是否真的到达了磁盘，有哪些因素在起作用？</li>
-<li>应用程序的写入参数、文件系统参数、硬件参数是如何保证数据落盘的？</li>
-<li>今天的x86硬件体系结构，服务器硬件层面，有哪些硬件write cache，断电是否数据丢失？</li>
-<li>数据落盘，很重要的“刷盘”命令，硬件层面到底是什么？</li>
-<li>掉电保护和“刷盘”的关系是什么，是否就不用“刷盘”了？</li>
-<li>SCSI和ATA到底是什么关系，为什么我用的SATA盘识别成SCSI设备？</li>
-</ul>
-<h3 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h3><p>还是我的这台机器，sdb是SATA SSD，sdc是SATA HDD。它们连接在PCH（南桥），走AHCI控制器。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">Summary:	ASRock Z370M-ITX/ac, 1 x Core i5-8400 2.80GHz, 15.2GB / 16GB 2400MT/s DDR4</span><br><span class="line">System:		ASRock Z370M-ITX/ac</span><br><span class="line">Processors:	1 x Core i5-8400 2.80GHz 100MHz FSB (6 cores)</span><br><span class="line">Memory:		15.2GB / 16GB 2400MT/s DDR4 == 2 x 8GB</span><br><span class="line">Disk:		sda (scsi0): 240GB (7%) JBOD == 1 x 240GB Gen3 signaling speed (6.0Gb/s) LITEON-EGT-240N9S</span><br><span class="line">Disk:		sdb: 100GB JBOD == 1 x 100GB SATA 300MB/s INTEL-SSDSA2BZ100G3</span><br><span class="line">Disk:		sdc (scsi2): 1.0TB JBOD == 1 x 1.0TB Gen3 signaling speed (6.0Gb/s) WDC-WD10JPLX-00MBPT1</span><br><span class="line">Disk-Control:	ahci0: Intel 200 Series PCH SATA controller [AHCI mode]</span><br><span class="line">Network:	00:1f.6 (e1000e0): Intel Ethernet Connection (2) I219-V</span><br><span class="line">Network:	02:00.0 (igb0): Intel I211 Gigabit</span><br><span class="line">Network:	03:00.0 (iwlwifi0): Intel Dual Band Wireless-AC 3168NGW [Stone Peak]</span><br><span class="line">OS:		CentOS Linux 7.6.1810 (Core) , Linux 3.10.0-957.5.1.el7.x86_64 x86_64, 64-bit</span><br><span class="line">BIOS:		AMI P1.50 11/16/2017</span><br><span class="line">Hostname:	MiWiFi-R1CM-srv</span><br></pre></td></tr></table></figure></p>
-<h3 id="硬件层"><a href="#硬件层" class="headerlink" title="硬件层"></a>硬件层</h3><h4 id="硬件存储体系简述"><a href="#硬件存储体系简述" class="headerlink" title="硬件存储体系简述"></a>硬件存储体系简述</h4><p>在x86服务器上，本地存储介质的连接方式主要有以下几种，<-> 表示互相连接。</-></p>
-<ul>
-<li>内存 <-> CPU <-> Raid/HBA卡 <-> SATA/SAS HDD/SSD</-></-></-></li>
-<li>内存 <-> CPU <-> PCH <-> SATA HDD/SSD</-></-></-></li>
-<li>内存 <-> CPU <-> PCIe/NVMe SSD</-></-></li>
-</ul>
-<p>CPU包含内存控制器，直连内存。内存一般存放应用自身维护的cache和系统的page cache，内存当然是掉电数据丢失的。<br>为了提升性能，Raid卡、HDD、SSD都有自身的write cache，这些write cache是影响落盘的硬件层面因素。</p>
-<h4 id="HDD-SSD-write-cache"><a href="#HDD-SSD-write-cache" class="headerlink" title="HDD/SSD write cache"></a>HDD/SSD write cache</h4><p>这里简单测试一下就好。我们可以用hdparm来查看、关闭、打开write cache。<br>这里少于ms级的数据写入时间，明显是HDD的write cache的返回。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ata]# hdparm -W /dev/sdc</span><br><span class="line">/dev/sdc:</span><br><span class="line"> write-caching =  1 (on)</span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ata]# dd if=/dev/zero of=/dev/sdc count=1 bs=4k oflag=direct</span><br><span class="line">记录了1+0 的读入</span><br><span class="line">记录了1+0 的写出</span><br><span class="line">4096字节(4.1 kB)已复制，0.000929063 秒，4.4 MB/秒</span><br></pre></td></tr></table></figure></p>
-<p>可以看到，关闭HDD cache对写入的延迟影响是巨大的。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ata]# hdparm -W 0 /dev/sdc</span><br><span class="line">/dev/sdc:</span><br><span class="line"> setting drive write-caching to 0 (off)</span><br><span class="line"> write-caching =  0 (off)</span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ata]# dd if=/dev/zero of=/dev/sdc count=1 bs=4k oflag=direct</span><br><span class="line">记录了1+0 的读入</span><br><span class="line">记录了1+0 的写出</span><br><span class="line">4096字节(4.1 kB)已复制，0.042402 秒，96.6 kB/秒</span><br></pre></td></tr></table></figure></p>
-<h4 id="刷盘指令"><a href="#刷盘指令" class="headerlink" title="刷盘指令"></a>刷盘指令</h4><p>由于write cache enable后，掉电数据丢失，为了保证数据落盘，也就引出了刷盘命令。<br>简单的说，刷盘是把HDD/SSD write cache里的数据写入存储介质（碟片/Nand），数据写入完毕后，再返回OK。</p>
-<p>可以参考wikipedia关于刷盘的介绍。</p>
-<p><a href="https://en.wikipedia.org/wiki/Disk_buffer" target="_blank" rel="noopener">https://en.wikipedia.org/wiki/Disk_buffer</a><br>Cache flushing<br>Data that was accepted in write cache of a disk device will be eventually written to disk platters, provided that no starvation condition occurs as a result of firmware flaw, and that disk power supply is not interrupted before cached writes are forced to disk platters. In order to control write cache, ATA specification included FLUSH CACHE (E7h) and FLUSH CACHE EXT (EAh) commands. These commands cause the disk to complete writing data from its cache, and disk will return good status after data in the write cache is written to disk media. In addition, flushing the cache can be initiated at least to some disks by issuing Soft reset or Standby (Immediate) command.[4]</p>
-<p>在ATA Command Set里，定义了FLUSH CACHE (E7h) 和 FLUSH CACHE EXT (EAh) 这两个指令用于刷盘。<br>这里FLUSH_CACHE是用于支持28bit LBA长度的命令的存储设备的，最大137GB硬盘，目前已经淘汰。<br>今天的刷盘命令，都是指FLUSH_CACHE_EXT，即48bit LBA长度的命令。<br>我们可以看看行业规范如何定义这个命令：</p>
-<p>The FLUSH CACHE EXT command requests the device to flush the volatile write cache. If there is data in the volatile write cache, that data shall be written to the non-volatile media. This command shall not indicate completion until the data is flushed to the non-volatile media or an error occurs. If the volatile write cache is disabled or no volatile write cache is present, the device shall indicate command completion without error.</p>
-<p>链接：<a href="http://www.t13.org/documents/UploadedDocuments/docs2016/di529r14-ATAATAPI_Command_Set_-_4.pdf" target="_blank" rel="noopener">ATAATAPI_Command_Set</a></p>
-<h4 id="掉电保护"><a href="#掉电保护" class="headerlink" title="掉电保护"></a>掉电保护</h4><p>刷盘这个指令当时是为了解决HDD掉电write cache数据一定丢失的问题，在Nand介质出现以后，引入了掉电数据保护功能。<br>掉电数据保护 power loss protection (PLP)，指的是服务器异常断电时，存储设备能把write cache里的数据写回介质。<br>以下总结适用于普通的x86服务器，以下都是Write cache enable场景。</p>
-<ul>
-<li>企业级SSD、包含SATA/SAS/PCIe/NVMe SSD等，通过超级电容保证断电时把write cache中的数据写回Nand。</li>
-<li>消费级SSD由于面向的客户群体及成本考虑，不带掉电数据保护，掉电时cache数据存在丢失几率。</li>
-<li>HDD，无论企业级还是消费级，都不带掉电保护功能。因为驱动12V和5V的马达保证转速并写入数据对功率要求较大。</li>
-<li>Raid卡一般配置电池或超级电容，断电后把write cache的数据临时写入Raid卡的板载Nand颗粒上。当服务器上电后，Raid卡重新把Nand的数据写回HDD。当使用Raid卡时，Raid卡默认关闭HDD的write cache，避免Raid卡不丢数据，但是HDD丢数据。</li>
-</ul>
-<h4 id="什么时候不用刷盘"><a href="#什么时候不用刷盘" class="headerlink" title="什么时候不用刷盘"></a>什么时候不用刷盘</h4><p>由上文可知，支持掉电保护的硬件，是不需要刷盘的。例如：</p>
-<ul>
-<li>数据到达带电池/超级电容的Raid卡write cache，即向上层返回写入OK，可以认为数据落盘（默认关闭HDD write cache）。</li>
-<li>没有raid卡，数据到达企业级SSD的write cache，即向上层返回写入OK，可以认为数据落盘。</li>
-</ul>
-<p>你的设备是否支持掉电保护，请以你实际的硬件设备为准，在引入生产之前，查看供应商的测试报告和自己进行测试。</p>
-<h4 id="什么时候需要刷盘"><a href="#什么时候需要刷盘" class="headerlink" title="什么时候需要刷盘"></a>什么时候需要刷盘</h4><p>如果不支持掉电保护同时write cache enable，就需要刷盘，也就是下发FLUSH_CACHE_EXT，并等待这条指令返回OK，才可以认为数据落盘。</p>
-<h3 id="驱动层"><a href="#驱动层" class="headerlink" title="驱动层"></a>驱动层</h3><p>在硬件（包含硬件firmware）之上，就是驱动层了，由于我用的是SATA HDD/SSD，ATA驱动是SCSI子系统的一部分，所以这里重点看SCSI子系统如何下发FLUSH_CACHE_EXT命令。如果你使用的是PCIe/NVMe SSD，则不经过SCSI子系统，NVMe驱动直接到块设备层。</p>
-<p>关于SCSI子系统、NVMe的IO路径，可以参考这幅著名的Linux IO stack图。<br>连接：<a href="https://www.thomas-krenn.com/en/wiki/Linux_Storage_Stack_Diagram" target="_blank" rel="noopener">Linux Storage Stack Diagram
-</a></p>
-<h4 id="SCSI和ATA的转换"><a href="#SCSI和ATA的转换" class="headerlink" title="SCSI和ATA的转换"></a>SCSI和ATA的转换</h4><p>这里有一个非常关键的知识点：在Linux内核里，除了NVMe以外，存储设备都是在SCSI体系内管理的。应用层的读写操作，会以bio的形式提交给block层，然后，block会把bio转换成request，并把该request加入到专为某个SCSI device服务的request queue中，接下来会有内核线程适时地从该queue中摘取request，并转换成SCSI cmd，再转换成ATA cmd，最终交由AHCI Controller（对于AHCI，实际上会把ATA cmd转换成FIS结构）发向硬盘执行。<br>参考：<a href="http://www.cnblogs.com/raymondpang/articles/4469500.html" target="_blank" rel="noopener">request到ATA cmd的转换过程</a></p>
-<p>我们接下来看看下发的SCSI的具体指令，打开scsi的日志信息，注意这里是-1。<br>参考：<a href="https://blog.csdn.net/fhqfghgdx1993/article/details/79915918" target="_blank" rel="noopener">Linux 开启 SCSI 日志调试功能</a><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">scsi_logging_level 值可以在 boot 命令行设置也可以开启设备后在 /proc 文件系统中设置：</span><br><span class="line">-1   - Enable scsi events to syslog.         // 开启所有scsi log</span><br><span class="line">0    - Disable scsi events to syslog.        // 关闭所有scsi log</span><br><span class="line">命令:</span><br><span class="line">    echo 0/-1 &gt; /proc/sys/dev/scsi/logging_level</span><br></pre></td></tr></table></figure></p>
-<p>我们知道sync命令就有刷盘的功能，执行一次再看看dmesg日志。这里下发了CDB 35H<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[47505.162954] sd 0:0:0:0: [sda] tag#5 Send: scmd 0xffff97b61d238fc0</span><br><span class="line">[47505.162965] sd 0:0:0:0: [sda] tag#5 CDB: Synchronize Cache(10) 35 00 00 00 00 00 00 00 00 00</span><br><span class="line">[47505.163957] sd 0:0:0:0: [sda] tag#5 Done: SUCCESS Result: hostbyte=DID_OK driverbyte=DRIVER_OK</span><br><span class="line">[47505.163974] sd 0:0:0:0: [sda] tag#5 CDB: Synchronize Cache(10) 35 00 00 00 00 00 00 00 00 00</span><br><span class="line">[47505.163985] sd 0:0:0:0: [sda] tag#5 scsi host busy 1 failed 0</span><br><span class="line">[47505.164003] sd 0:0:0:0: Notifying upper driver of completion (result 0)</span><br><span class="line">[47505.164013] sd 0:0:0:0: [sda] tag#5 sd_done: completed 0 of 0 bytes</span><br><span class="line">[47505.164023] sd 0:0:0:0: [sda] tag#5 0 sectors total, 0 bytes done.</span><br></pre></td></tr></table></figure></p>
-<p>在SCSI命令集里，35h指令对应的是SYNCHRONIZE CACHE，也就是刷盘。<br>The SYNCHRONIZE CACHE (10) command (see table 199) requests that the device server ensure that the specified logical blocks have their most recent data values recorded in non-volatile cache and/or on the medium.<br>参考：<a href="https://www.seagate.com/files/staticfiles/support/docs/manual/Interface%20manuals/100293068k.pdf" target="_blank" rel="noopener">SCSI Commands Reference Manual</a></p>
-<h4 id="刷盘命令的转换"><a href="#刷盘命令的转换" class="headerlink" title="刷盘命令的转换"></a>刷盘命令的转换</h4><p>SCSI的SYNCHRONIZE CACHE，ATA的FLUSH CACHE EXT，这是两条刷盘命令。<br>我用的是SATA HDD/SSD，是在SCSI体系里使用ATA设备，刷盘命令也需要转换。<br>通过搜索官方文档，可以看到libata-scsi.c里的ata_scsi_flush_xlat函数，就是做这个事。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">ata_scsi_flush_xlat</span><br><span class="line">Translate SCSI SYNCHRONIZE CACHE command</span><br><span class="line"></span><br><span class="line">Description</span><br><span class="line">Sets up an ATA taskfile to issue FLUSH CACHE or FLUSH CACHE EXT.</span><br></pre></td></tr></table></figure></p>
-<p>参考：<a href="https://www.kernel.org/doc/html/latest/driver-api/libata.html#c.ata_scsi_flush_xlat" target="_blank" rel="noopener">The Linux driver implementer’s API guide » libATA Developer’s Guide</a></p>
-<p>跟踪</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">用systemtap可以很容易找到探测点</span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# stap -L &apos;module(&quot;libata&quot;).function(&quot;ata_scsi_flush_xlat&quot;)&apos;</span><br><span class="line">module(&quot;libata&quot;).function(&quot;ata_scsi_flush_xlat@drivers/ata/libata-scsi.c:1434&quot;) $qc:struct ata_queued_cmd* $tf:struct ata_taskfile*</span><br></pre></td></tr></table></figure>
-<p>至此，通过驱动层，我们知道，在SCSI子系统里，刷盘是SYNCHRONIZE CACHE这条SCSI命令。</p>
-<h3 id="块设备层"><a href="#块设备层" class="headerlink" title="块设备层"></a>块设备层</h3><h3 id="文件系统层"><a href="#文件系统层" class="headerlink" title="文件系统层"></a>文件系统层</h3><h3 id="应用层"><a href="#应用层" class="headerlink" title="应用层"></a>应用层</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">yum install man-pages.noarch</span><br></pre></td></tr></table></figure>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
-<li>带掉电保护的设备，不需要刷盘。</li>
-<li>write cache enable时，不带掉电保护的设备，需要刷盘。</li>
-<li>ATA标准是T13，刷盘命令是Flush cache ext，代码EAh。</li>
-<li>SCSI标准是T10，刷盘命令是Synchronize Cache，代码35h。</li>
-<li>bio转换成request，request转换成SCSI命令，SCSI命令转换为ATA命令，AHCI把ATA命令转换为FIS结构发向硬盘。</li>
-<li>libata-scsi.c里的ata_scsi_flush_xlat函数进行刷盘命令从SCSI到ATA的转换。</li>
-</ul>
-<h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><p>在文章引用了很多文章，这里附上额外的一些参考，一并致谢。</p>
-<p><a href="https://unix.stackexchange.com/questions/144561/in-what-sense-does-sata-talk-scsi-how-much-is-shared-between-scsi-and-ata" target="_blank" rel="noopener">In what sense does SATA “talk” SCSI? How much is shared between SCSI and ATA?</a></p>
 
           
         
@@ -821,10 +759,6 @@
   </section>
 
   
-  <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right"></i></a>
-  </nav>
-
 
 
           </div>
@@ -869,7 +803,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">5</span>
+                  <span class="site-state-item-count">3</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -891,7 +825,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">5</span>
+                  <span class="site-state-item-count">6</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
