@@ -66,7 +66,7 @@
 
 
 
-  <meta name="keywords" content="VPN,wireguard,">
+  <meta name="keywords" content="CPU,性能监控,">
 
 
 
@@ -77,18 +77,18 @@
 
 
 
-<meta name="description" content="场景这是我个人的需求，但是也有借鉴意义。需要在外部连接家里的机器做测试，家里路由器拨号之后没有公网IP，所以使用一台具有公网IP的阿里云ECS服务器作为中转，打通内网的机器和阿里云服务器。在以往，我会使用strongswan来搭建IKEv2的VPN来实现这个需求，但是现在有更简单好用的wireguard了。 wireguard介绍毕竟是VPN软件，所以需要翻墙访问。wireguard官网wireg">
-<meta name="keywords" content="VPN,wireguard">
+<meta name="description" content="前言2013年，我因为工作需要开始进入Linux性能分析、优化及Debug领域。 2019年，恰逢《极客时间》的APP有了《Linux性能优化实战》课程，我也参与订阅学习，这篇文章便是学习笔记。这个课程非常不错，链接如下：https://time.geekbang.org/column/intro/140 当然，在这个领域，Netflix的Brendan D. Gregg大神的博客和PPT仍然是最">
+<meta name="keywords" content="CPU,性能监控">
 <meta property="og:type" content="article">
-<meta property="og:title" content="使用wireguard打通内网机器和外网云服务器">
-<meta property="og:url" content="http://blog.zw1m.com/2019/03/使用wireguard打通内网机器和外网云服务器/index.html">
+<meta property="og:title" content="Linux性能优化实战笔记-CPU篇">
+<meta property="og:url" content="http://blog.zw1m.com/2019/04/Linux性能优化实战笔记-CPU篇/index.html">
 <meta property="og:site_name" content="运维深处">
-<meta property="og:description" content="场景这是我个人的需求，但是也有借鉴意义。需要在外部连接家里的机器做测试，家里路由器拨号之后没有公网IP，所以使用一台具有公网IP的阿里云ECS服务器作为中转，打通内网的机器和阿里云服务器。在以往，我会使用strongswan来搭建IKEv2的VPN来实现这个需求，但是现在有更简单好用的wireguard了。 wireguard介绍毕竟是VPN软件，所以需要翻墙访问。wireguard官网wireg">
+<meta property="og:description" content="前言2013年，我因为工作需要开始进入Linux性能分析、优化及Debug领域。 2019年，恰逢《极客时间》的APP有了《Linux性能优化实战》课程，我也参与订阅学习，这篇文章便是学习笔记。这个课程非常不错，链接如下：https://time.geekbang.org/column/intro/140 当然，在这个领域，Netflix的Brendan D. Gregg大神的博客和PPT仍然是最">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-04-01T08:50:56.593Z">
+<meta property="og:updated_time" content="2019-04-04T04:24:43.716Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="使用wireguard打通内网机器和外网云服务器">
-<meta name="twitter:description" content="场景这是我个人的需求，但是也有借鉴意义。需要在外部连接家里的机器做测试，家里路由器拨号之后没有公网IP，所以使用一台具有公网IP的阿里云ECS服务器作为中转，打通内网的机器和阿里云服务器。在以往，我会使用strongswan来搭建IKEv2的VPN来实现这个需求，但是现在有更简单好用的wireguard了。 wireguard介绍毕竟是VPN软件，所以需要翻墙访问。wireguard官网wireg">
+<meta name="twitter:title" content="Linux性能优化实战笔记-CPU篇">
+<meta name="twitter:description" content="前言2013年，我因为工作需要开始进入Linux性能分析、优化及Debug领域。 2019年，恰逢《极客时间》的APP有了《Linux性能优化实战》课程，我也参与订阅学习，这篇文章便是学习笔记。这个课程非常不错，链接如下：https://time.geekbang.org/column/intro/140 当然，在这个领域，Netflix的Brendan D. Gregg大神的博客和PPT仍然是最">
 
 
 
@@ -118,13 +118,13 @@
 
 
 
-  <link rel="canonical" href="http://blog.zw1m.com/2019/03/使用wireguard打通内网机器和外网云服务器/">
+  <link rel="canonical" href="http://blog.zw1m.com/2019/04/Linux性能优化实战笔记-CPU篇/">
 
 
 
 
 
-  <title>使用wireguard打通内网机器和外网云服务器 | 运维深处</title>
+  <title>Linux性能优化实战笔记-CPU篇 | 运维深处</title>
   
 
 
@@ -293,7 +293,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/03/使用wireguard打通内网机器和外网云服务器/">
+    <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/04/Linux性能优化实战笔记-CPU篇/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Roger K">
@@ -310,7 +310,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">使用wireguard打通内网机器和外网云服务器</h1>
+          <h1 class="post-title" itemprop="name headline">Linux性能优化实战笔记-CPU篇</h1>
         
 
         <div class="post-meta">
@@ -322,8 +322,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-22T19:37:13+08:00">
-                2019-03-22
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-04-04T12:23:42+08:00">
+                2019-04-04
               </time>
             
 
@@ -345,8 +345,8 @@
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/网络/" itemprop="url" rel="index">
-                    <span itemprop="name">网络</span>
+                  <a href="/categories/性能分析/" itemprop="url" rel="index">
+                    <span itemprop="name">性能分析</span>
                   </a>
                 </span>
 
@@ -382,13 +382,91 @@
       
 
       
-        <h3 id="场景"><a href="#场景" class="headerlink" title="场景"></a>场景</h3><p>这是我个人的需求，但是也有借鉴意义。<br>需要在外部连接家里的机器做测试，家里路由器拨号之后没有公网IP，所以使用一台具有公网IP的阿里云ECS服务器作为中转，打通内网的机器和阿里云服务器。<br>在以往，我会使用strongswan来搭建IKEv2的VPN来实现这个需求，但是现在有更简单好用的wireguard了。</p>
-<h3 id="wireguard介绍"><a href="#wireguard介绍" class="headerlink" title="wireguard介绍"></a>wireguard介绍</h3><p>毕竟是VPN软件，所以需要翻墙访问。<br><a href="https://www.wireguard.com/" target="_blank" rel="noopener">wireguard官网</a><br><a href="https://www.wireguard.com/presentations/" target="_blank" rel="noopener">wireguard官网的视频介绍</a></p>
-<h3 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h3><p>两台CentOS 7.6，都可以访问公网。<br>A机器仅有内网IP，B机器有公网IP和内网IP。</p>
-<h3 id="配置方式"><a href="#配置方式" class="headerlink" title="配置方式"></a>配置方式</h3><figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">A机器(家里)内网(192.168.31.0/24)</span><br><span class="line">B机器(ECS)内网(172.16.100.0/24)</span><br><span class="line"></span><br><span class="line"><span class="section">分别在每个机器执行:</span></span><br><span class="line">yum install -y epel-release</span><br><span class="line">curl -Lo /etc/yum.repos.d/wireguard.repo https://copr.fedorainfracloud.org/coprs/jdoss/wireguard/repo/epel-7/jdoss-wireguard-epel-7.repo</span><br><span class="line"></span><br><span class="line">yum install wireguard-dkms wireguard-tools -y</span><br><span class="line">mkdir -p  /etc/wireguard</span><br><span class="line">umask 077</span><br><span class="line">cd  /etc/wireguard</span><br><span class="line">wg genkey | tee privatekey | wg pubkey &gt; publickey</span><br><span class="line">vim wg0.conf 内容如下:</span><br><span class="line"></span><br><span class="line">[Interface]</span><br><span class="line">PrivateKey = 本机的privatekey</span><br><span class="line">ListenPort = 2503</span><br><span class="line">PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE</span><br><span class="line">PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE</span><br><span class="line">MTU = 1500</span><br><span class="line">[Peer]</span><br><span class="line">PublicKey = 远端的publickey</span><br><span class="line">Endpoint = 远端的ip:2503（公网ip，至少需要一端有，没有就不写）</span><br><span class="line">AllowedIPs = 远端的网段</span><br><span class="line"></span><br><span class="line">启动</span><br><span class="line">systemctl start wg-quick@wg0.service </span><br><span class="line">echo 'net.ipv4.ip_forward = 1'  &gt;&gt; /etc/sysctl.conf </span><br><span class="line">启用转发</span><br><span class="line">sysctl -p </span><br><span class="line"></span><br><span class="line">分别A,B机器启动, 然后ping对方, 谁先ping, 谁就发起连接。</span><br><span class="line">由于我的环境里，只有阿里云ECS才有公网IP，所以我只能由家里机器发起ping。</span><br><span class="line">配置上开机启动服务。</span><br><span class="line">systemctl enable wg-quick@wg0.service</span><br></pre></td></tr></table></figure>
-<p>要开机自动连接到阿里云，就写个crontab的ping，每分钟ping一次好了。<br>这里我使用家里的机器，ping阿里云服务器的内网IP，即可自动建立连接。<br><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# cat /etc/crontab </span><br><span class="line"><span class="attribute">SHELL</span>=/bin/bash</span><br><span class="line"><span class="attribute">PATH</span>=/sbin:/bin:/usr/sbin:/usr/bin</span><br><span class="line">MAILTO=</span><br><span class="line"></span><br><span class="line"><span class="comment"># For details see man 4 crontabs</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Example of job definition:</span></span><br><span class="line"><span class="comment"># .---------------- minute (0 - 59)</span></span><br><span class="line"><span class="comment"># |  .------------- hour (0 - 23)</span></span><br><span class="line"><span class="comment"># |  |  .---------- day of month (1 - 31)</span></span><br><span class="line"><span class="comment"># |  |  |  .------- month (1 - 12) OR jan,feb,mar,apr ...</span></span><br><span class="line"><span class="comment"># |  |  |  |  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat</span></span><br><span class="line"><span class="comment"># |  |  |  |  |</span></span><br><span class="line"><span class="comment"># *  *  *  *  * user-name  command to be executed</span></span><br><span class="line">*  *  *  *  * root <span class="built_in"> ping </span>-c1 172.16.100.38 &amp;&gt; /dev/<span class="literal">null</span></span><br><span class="line"></span><br><span class="line">wg show 查看状态</span><br></pre></td></tr></table></figure></p>
-<p>由于wireguard是内核模块，需要注意内核各个rpm包小版本一致。<br>例如我这里，都是3.10.0-957.5.1.el7.x86_64这个小版本。<br><figure class="highlight lsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# rpm -qa | grep kernel</span><br><span class="line">kernel<span class="number">-3.10</span><span class="number">.0</span><span class="number">-957.5</span><span class="number">.1</span>.el7.x86_64</span><br><span class="line">kernel-headers<span class="number">-3.10</span><span class="number">.0</span><span class="number">-957.5</span><span class="number">.1</span>.el7.x86_64</span><br><span class="line">kernel-tools-libs<span class="number">-3.10</span><span class="number">.0</span><span class="number">-957.5</span><span class="number">.1</span>.el7.x86_64</span><br><span class="line">kernel-devel<span class="number">-3.10</span><span class="number">.0</span><span class="number">-957.5</span><span class="number">.1</span>.el7.x86_64</span><br><span class="line">kernel-debuginfo<span class="number">-3.10</span><span class="number">.0</span><span class="number">-957.5</span><span class="number">.1</span>.el7.x86_64</span><br><span class="line">kernel-tools<span class="number">-3.10</span><span class="number">.0</span><span class="number">-957.5</span><span class="number">.1</span>.el7.x86_64</span><br><span class="line">kernel-debuginfo-common-x86_64<span class="number">-3.10</span><span class="number">.0</span><span class="number">-957.5</span><span class="number">.1</span>.el7.x86_64</span><br></pre></td></tr></table></figure></p>
-<h3 id="解决ssh长输出变卡"><a href="#解决ssh长输出变卡" class="headerlink" title="解决ssh长输出变卡"></a>解决ssh长输出变卡</h3><p>从远程通过wireguard vpn连接到本地机器时，ssh之后敲命令正常，但是长输出命令就会卡住，例如dmesg。<br>这种问题是由于MTU造成的丢包重传延迟。<br>把cat /etc/wireguard/wg0.conf配置文件里的MTU =1500设置小一点，例如1400，我这边问题解决，dmesg命令秒开。</p>
+        <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>2013年，我因为工作需要开始进入Linux性能分析、优化及Debug领域。</p>
+<p>2019年，恰逢《极客时间》的APP有了《Linux性能优化实战》课程，我也参与订阅学习，这篇文章便是学习笔记。这个课程非常不错，链接如下：<a href="https://time.geekbang.org/column/intro/140" target="_blank" rel="noopener">https://time.geekbang.org/column/intro/140</a></p>
+<p>当然，在这个领域，Netflix的Brendan D. Gregg大神的博客和PPT仍然是最优秀的学习材料，我在后面也会分享关于他的学习笔记。</p>
+<h3 id="第一周-00-08"><a href="#第一周-00-08" class="headerlink" title="第一周 00-08"></a>第一周 00-08</h3><p>1 性能分析，其实就是找出应用或系统的瓶颈，并设法去避免或者缓解它们，从而更高效地利用系统资源处理更多的请求。这包含了一系列的步骤，比如下面这六个步骤。</p>
+<ul>
+<li>选择指标评估应用程序和系统的性能；</li>
+<li>为应用程序和系统设置性能目标；</li>
+<li>进行性能基准测试；</li>
+<li>性能分析定位瓶颈；</li>
+<li>优化系统和应用程序；</li>
+<li>性能监控和告警。</li>
+</ul>
+<p>2 平均负载是指单位时间内，系统处于可运行状态和不可中断状态的平均进程数，也就是平均活跃进程数，它和CPU使用率并没有直接关系。</p>
+<ul>
+<li>所谓可运行状态的进程，是指正在使用CPU或者正在等待CPU的进程，也就是我们常用ps命令看到的，处于R状态（Running或Runnable）的进程。</li>
+<li>不可中断状态的进程则是正处于内核态关键流程中的进程，并且这些流程是不可打断的，比如最常见的是等待硬件设备的IO响应，也就是我们在ps命令中看到的D状态（UninterruptibleSleep，也称为DiskSleep）的进程。</li>
+<li>比如，当一个进程向磁盘读写数据时，为了保证数据的一致性，在得到磁盘回复前，它是不能被其他进程或者中断打断的，这个时候的进程就处于不可中断状态。如果此时的进程被打断了，就容易出现磁盘数据与进程数据不一致的问题。所以，不可中断状态实际上是系统对进程和硬件设备的一种保护机制。</li>
+<li>平均负载高有可能是CPU密集型进程导致的；</li>
+<li>平均负载高并不一定代表CPU使用率高，还有可能是IO更繁忙了；</li>
+<li>当发现负载高的时候，你可以使用mpstat、pidstat等工具，辅助分析负载的来源。</li>
+</ul>
+<p>3 Linux 是一个多任务操作系统，它支持远大于 CPU 数量的任务同时运行。当然，这些任务实际上并不是真的在同时运行，而是因为系统在很短的时间内，将 CPU 轮流分配给它们，造成多任务同时运行的错觉。 而在每个任务运行前，CPU 都需要知道任务从哪里加载、又从哪里开始运行，也就是说，需要系统事先帮它设置好 CPU 寄存器和程序计数器（Program Counter，PC）。 CPU 寄存器，是 CPU 内置的容量小、但速度极快的内存。而程序计数器，则是用来存储 CPU 正在执行的指令位置、或者即将执行的下一条指令位置。它们都是 CPU 在运行任何任务前，必须的依赖环境，因此也被叫做 CPU 上下文。</p>
+<p>4 CPU和寄存器资料：<a href="https://software.intel.com/en-us/articles/intel-sdm" target="_blank" rel="noopener">Intel® 64 and IA-32 Architectures Software Developer Manuals</a></p>
+<p>5 CPU 上下文切换，就是先把前一个任务的 CPU 上下文（也就是 CPU 寄存器和程序计数器）保存起来，然后加载新任务的上下文到这些寄存器和程序计数器，最后再跳转到程序计数器所指的新位置，运行新任务。 而这些保存下来的上下文，会存储在系统内核中，并在任务重新调度执行时再次加载进来。这样就能保证任务原来的状态不受影响，让任务看起来还是连续运行。</p>
+<p>6 操作系统管理的任务可以分为进程、线程、硬件中断。所以，根据任务的不同，CPU的上下文切换就可以分为几个不同的场景，也就是进程上下文切换、线程上下文切换以及中断上下文切换。</p>
+<p>7 进程上下文切换，Linux按照特权级别，分为内核空间和用户空间，对应CPU的Ring0和Ring3，参考<a href="https://time.geekbang.org/column/article/69859" target="_blank" rel="noopener">Protection ring</a></p>
+<ul>
+<li>内核空间（Ring 0）具有最高权限，可以直接访问所有资源；</li>
+<li>用户空间（Ring 3）只能访问受限资源，不能直接访问内存等硬件设备，必须通过系统调用陷入到内核中，才能访问这些特权资源。</li>
+</ul>
+<p>8 也就是说，进程既可以在用户空间运行，又可以在内核空间中运行。进程在用户空间运行时，被称为进程的用户态，而陷入内核空间的时候，被称为进程的内核态。 从用户态到内核态的转变，需要通过系统调用来完成。比如，当我们查看文件内容时，就需要多次系统调用来完成：首先调用 open() 打开文件，然后调用 read() 读取文件内容，并调用 write() 将内容写到标准输出，最后再调用 close() 关闭文件。</p>
+<p>9 系统调用的过程发生上下文切换，CPU 寄存器里原来用户态的指令位置，需要先保存起来。接着，为了执行内核态代码，CPU 寄存器需要更新为内核态指令的新位置。最后才是跳转到内核态运行内核任务。 而系统调用结束后，CPU 寄存器需要恢复原来保存的用户态，然后再切换到用户空间，继续运行进程。所以，一次系统调用的过程，其实是发生了两次 CPU 上下文切换。 </p>
+<p>不过，需要注意的是，系统调用过程中，并不会涉及到虚拟内存等进程用户态的资源，也不会切换进程。这跟我们通常所说的进程上下文切换是不一样的：</p>
+<ul>
+<li>进程上下文切换，是指从一个进程切换到另一个进程运行。</li>
+<li>而系统调用过程中一直是同一个进程在运行。 </li>
+</ul>
+<p>所以，系统调用过程通常称为特权模式切换，而不是上下文切换。但实际上，系统调用过程中，CPU 的上下文切换还是无法避免的。</p>
+<p>10 进程上下文切换跟系统调用区别：</p>
+<p>进程是由内核来管理和调度的，进程的切换只能发生在内核态。所以，进程的上下文不仅包括了虚拟内存、栈、全局变量等用户空间的资源，还包括了内核堆栈、寄存器等内核空间的状态。 </p>
+<p>因此，进程的上下文切换就比系统调用时多了一步：在保存当前进程的内核状态和 CPU 寄存器之前，需要先把该进程的虚拟内存、栈等保存下来；而加载了下一进程的内核态后，还需要刷新进程的虚拟内存和用户栈。</p>
+<p>在进程上下文切换次数较多的情况下，很容易导致 CPU 将大量时间耗费在寄存器、内核栈以及虚拟内存等资源的保存和恢复上，进而大大缩短了真正运行进程的时间。</p>
+<p>另外，Linux 通过 TLB（Translation Lookaside Buffer）来管理虚拟内存到物理内存的映射关系。当虚拟内存更新后，TLB 也需要刷新，内存的访问也会随之变慢。特别是在多处理器系统上，缓存是被多个处理器共享的，刷新缓存不仅会影响当前处理器的进程，还会影响共享缓存的其他处理器的进程。</p>
+<p>11 什么时候会切换进程上下文？ 进程切换时才需要切换上下文，换句话说，只有在进程调度的时候，才需要切换上下文。Linux 为每个 CPU 都维护了一个就绪队列，将活跃进程（即正在运行和正在等待 CPU 的进程）按照优先级和等待 CPU 的时间排序，然后选择最需要 CPU 的进程，也就是优先级最高和等待 CPU 时间最长的进程来运行。</p>
+<p>12 发生进程调度的场景，他们就是出现上下文切换性能问题的原因。</p>
+<ul>
+<li>其一，为了保证所有进程可以得到公平调度，CPU 时间被划分为一段段的时间片，这些时间片再被轮流分配给各个进程。这样，当某个进程的时间片耗尽了，就会被系统挂起，切换到其它正在等待 CPU 的进程运行。 </li>
+<li>其二，进程在系统资源不足（比如内存不足）时，要等到资源满足后才可以运行，这个时候进程也会被挂起，并由系统调度其他进程运行。</li>
+<li>其三，当进程通过睡眠函数 sleep 这样的方法将自己主动挂起时，自然也会重新调度。 </li>
+<li>其四，当有优先级更高的进程运行时，为了保证高优先级进程的运行，当前进程会被挂起，由高优先级进程来运行。 </li>
+<li>最后一个，发生硬件中断时，CPU 上的进程会被中断挂起，转而执行内核中的中断服务程序。</li>
+</ul>
+<p>13 查看进程被切换的情况，主动切换次数和被动切换次数。<br><figure class="highlight tcl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# cat /<span class="keyword">proc</span>/5800/status |<span class="title"> grep</span> switches</span><br><span class="line">voluntary_ctxt_switches:	239</span><br><span class="line">nonvoluntary_ctxt_switches:	70</span><br></pre></td></tr></table></figure></p>
+<p>14 线程上下文切换<br>线程与进程最大的区别在于，线程是调度的基本单位，而进程则是资源拥有的基本单位。说白了，所谓内核中的任务调度，实际上的调度对象是线程；而进程只是给线程提供了虚拟内存、全局变量等资源。<br>线程的上下文切换其实就可以分为两种情况： </p>
+<ul>
+<li>第一种，前后两个线程属于不同进程。此时，因为资源不共享，所以切换过程就跟进程上下文切换是一样。 </li>
+<li>第二种，前后两个线程属于同一个进程。此时，因为虚拟内存是共享的，所以在切换时，虚拟内存这些资源就保持不动，只需要切换线程的私有数据、寄存器等不共享的数据。</li>
+</ul>
+<p>15 中断的上下文切换<br>为了快速响应硬件的事件，中断处理会打断进程的正常调度和执行，转而调用中断处理程序，响应设备事件。而在打断其他进程时，就需要将进程当前的状态保存下来，这样在中断结束后，进程仍然可以从原来的状态恢复运行。 </p>
+<p>跟进程上下文不同，中断上下文切换并不涉及到进程的用户态。所以，即便中断过程打断了一个正处在用户态的进程，也不需要保存和恢复这个进程的虚拟内存、全局变量等用户态资源。中断上下文，其实只包括内核态中断服务程序执行所必需的状态，包括 CPU 寄存器、内核堆栈、硬件中断参数等。 </p>
+<p>对同一个 CPU 来说，中断处理比进程拥有更高的优先级，所以中断上下文切换并不会与进程上下文切换同时发生。同样道理，由于中断会打断正常进程的调度和执行，所以大部分中断处理程序都短小精悍，以便尽可能快的执行结束。 </p>
+<p>15 用systemtap跟踪中断，这里操作磁盘一次，通过/proc/interrupts和lspci，可以知道中断号123是南桥PCH（dd操作），129是网卡（ssh数据）。<br><figure class="highlight lsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# stap -e 'global irq;  probe kernel.trace(<span class="string">"irq_handler_entry"</span>) &#123;irq[$irq]&lt;&lt;&lt;<span class="number">1</span>&#125;' -c 'dd if=/dev/zero of=/dev/sdc count=<span class="number">1</span> bs=<span class="number">4</span>k oflag=direct'</span><br><span class="line">记录了<span class="number">1</span>+<span class="number">0</span> 的读入</span><br><span class="line">记录了<span class="number">1</span>+<span class="number">0</span> 的写出</span><br><span class="line"><span class="number">4096</span>字节(<span class="number">4.1</span> kB)已复制，<span class="number">0.000219332</span> 秒，<span class="number">18.7</span> MB/秒</span><br><span class="line">irq[<span class="number">123</span>] @count=<span class="number">29</span> @min=<span class="number">1</span> @max=<span class="number">1</span> @sum=<span class="number">29</span> @avg=<span class="number">1</span></span><br><span class="line">irq[<span class="number">129</span>] @count=<span class="number">1</span> @min=<span class="number">1</span> @max=<span class="number">1</span> @sum=<span class="number">1</span> @avg=<span class="number">1</span></span><br></pre></td></tr></table></figure></p>
+<p>16 除了vmstat以外，用pidstat看每个进程的上下文切换情况<br><figure class="highlight tap"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 每隔 5 秒输出 1 组数据</span></span><br><span class="line">$ pidstat -w 5</span><br><span class="line">Linux 4.15.0 (ubuntu)  09/23/18  _x86_64_  (2 CPU)</span><br><span class="line"></span><br><span class="line">08:18:26      UID       PID   cswch/s nvcswch/s  Command</span><br><span class="line">08:18:31       <span class="number"> 0 </span>       <span class="number"> 1 </span>     0.20      0.00  systemd</span><br><span class="line">08:18:31       <span class="number"> 0 </span>       <span class="number"> 8 </span>     5.40      0.00  rcu_sched</span><br><span class="line">...</span><br></pre></td></tr></table></figure></p>
+<p>17 一个是 cswch ，表示每秒自愿上下文切换（voluntary context switches）的次数，另一个则是 nvcswch ，表示每秒非自愿上下文切换（non voluntary context switches）的次数。</p>
+<p>所谓自愿上下文切换，是指进程无法获取所需资源，导致的上下文切换。比如说， I/O、内存等系统资源不足时，就会发生自愿上下文切换。 </p>
+<p>而非自愿上下文切换，则是指进程由于时间片已到等原因，被系统强制调度，进而发生的上下文切换。比如说，大量进程都在争抢 CPU 时，就容易发生非自愿上下文切换。</p>
+<p>18 pidstat 默认显示进程的指标数据，加上 -t 参数后，才会输出线程的指标。<br><figure class="highlight tap"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 每隔 1 秒输出一组数据（需要 Ctrl+C 才结束）</span></span><br><span class="line"><span class="comment"># -wt 参数表示输出线程的上下文切换指标</span></span><br><span class="line">$ pidstat -wt 1</span><br><span class="line">08:14:05      UID      TGID       TID   cswch/s nvcswch/s  Command</span><br><span class="line">...</span><br><span class="line">08:14:05       <span class="number"> 0 </span>   <span class="number"> 10551 </span>        -      6.00      0.00  sysbench</span><br><span class="line">08:14:05       <span class="number"> 0 </span>        -    <span class="number"> 10551 </span>     6.00      0.00  |__sysbench</span><br><span class="line">08:14:05       <span class="number"> 0 </span>        -    <span class="number"> 10552 </span> 18911.00 103740.00  |__sysbench</span><br><span class="line">08:14:05       <span class="number"> 0 </span>        -    <span class="number"> 10553 </span> 18915.00 100955.00  |__sysbench</span><br><span class="line">08:14:05       <span class="number"> 0 </span>        -    <span class="number"> 10554 </span> 18827.00 103954.00  |__sysbench</span><br><span class="line">...</span><br></pre></td></tr></table></figure></p>
+<p>19 当超过cpu处理能力时，会造成中断升高，这是因为过多任务的调度问题。<br>使用watch命令，变化速度最快的是重调度中断（RES），这个中断类型表示，唤醒空闲状态的 CPU 来调度新的任务运行。这是多处理器系统（SMP）中，调度器用来分散任务到不同 CPU 的机制，通常也被称为处理器间中断（Inter-Processor Interrupts，IPI）。<br><figure class="highlight tcl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># -d 参数表示高亮显示变化的区域</span></span><br><span class="line">$ watch -d cat /<span class="keyword">proc</span>/interrupts</span><br><span class="line"><span class="title">           CPU0</span> <span class="title">      CPU1</span></span><br><span class="line"><span class="title">...</span></span><br><span class="line"><span class="title">RES:</span>    2450431    5279697<span class="title">   Rescheduling</span> interrupts</span><br><span class="line">...</span><br></pre></td></tr></table></figure></p>
+<p>20 每秒上下文切换多少次才算正常呢？ 这个数值其实取决于系统本身的 CPU 性能。在我看来，如果系统的上下文切换次数比较稳定，那么从数百到一万以内，都应该算是正常的。<br>但当上下文切换次数超过一万次，或者切换次数出现数量级的增长时，就很可能已经出现了性能问题。 这时，你还需要根据上下文切换的类型，再做具体分析。比方说： </p>
+<ul>
+<li>自愿上下文切换变多了，说明进程都在等待资源，有可能发生了 I/O 等其他问题； </li>
+<li>非自愿上下文切换变多了，说明进程都在被强制调度，也就是都在争抢 CPU，说明 CPU 的确成了瓶颈； </li>
+<li>中断次数变多了，说明 CPU 被中断处理程序占用，还需要通过查看 /proc/interrupts 文件来分析具体的中断类型。</li>
+</ul>
+<p>21 Linux 作为一个多任务操作系统，将每个 CPU 的时间划分为很短的时间片，再通过调度器轮流分配给各个任务使用，因此造成多任务同时运行的错觉。<br>为了维护 CPU 时间，Linux 通过事先定义的节拍率（内核中表示为 HZ），触发时间中断，并使用全局变量 Jiffies 记录了开机以来的节拍数。每发生一次时间中断，Jiffies 的值就加 1。<br><figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">[root@MiWiFi-R1CM-srv ~]</span><span class="comment"># grep 'CONFIG_HZ=' /boot/config-$(uname -r)</span></span><br><span class="line"><span class="attr">CONFIG_HZ</span>=<span class="number">1000</span></span><br></pre></td></tr></table></figure></p>
+<p>22 碰到常规问题无法解释的 CPU 使用率情况时，首先要想到有可能是短时应用导致的问题，比如有可能是下面这两种情况。</p>
+<ul>
+<li>第一，应用里直接调用了其他二进制程序，这些程序通常运行时间比较短，通过 top 等工具也不容易发现。 </li>
+<li>第二，应用本身在不停地崩溃重启，而启动过程的资源初始化，很可能会占用相当多的 CPU。 对于这类进程，我们可以用 pstree 或者 execsnoop 找到它们的父进程，再从父进程所在的应用入手，排查问题的根源。</li>
+</ul>
+<p>23 用我们最熟悉的 ps 或者 top ，可以查看进程的状态，这些状态包括运行（R）、空闲（I）、不可中断睡眠（D）、可中断睡眠（S）、僵尸（Z）以及暂停（T）等。 其中，不可中断状态和僵尸状态，是我们今天学习的重点。 </p>
+<ul>
+<li>不可中断状态，表示进程正在跟硬件交互，为了保护进程数据和硬件的一致性，系统不允许其他进程或中断打断这个进程。进程长时间处于不可中断状态，通常表示系统有 I/O 性能问题。 </li>
+<li>僵尸进程表示进程已经退出，但它的父进程还没有回收子进程占用的资源。短暂的僵尸状态我们通常不必理会，但进程长时间处于僵尸状态，就应该注意了，可能有应用程序没有正常处理子进程的退出。</li>
+</ul>
 
       
     </div>
@@ -406,9 +484,9 @@
       
         <div class="post-tags">
           
-            <a href="/tags/VPN/" rel="tag"># VPN</a>
+            <a href="/tags/CPU/" rel="tag"># CPU</a>
           
-            <a href="/tags/wireguard/" rel="tag"># wireguard</a>
+            <a href="/tags/性能监控/" rel="tag"># 性能监控</a>
           
         </div>
       
@@ -421,8 +499,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2019/03/纠正几个Linux的IO监控指标的误区/" rel="next" title="纠正几个Linux的IO监控指标的误区">
-                <i class="fa fa-chevron-left"></i> 纠正几个Linux的IO监控指标的误区
+              <a href="/2019/03/全链路分析数据落盘机制-跟踪sync命令/" rel="next" title="全链路分析数据落盘机制-跟踪sync命令">
+                <i class="fa fa-chevron-left"></i> 全链路分析数据落盘机制-跟踪sync命令
               </a>
             
           </div>
@@ -430,10 +508,6 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2019/03/全链路分析数据落盘机制-硬件及驱动层/" rel="prev" title="全链路分析数据落盘机制-硬件及驱动层">
-                全链路分析数据落盘机制-硬件及驱动层 <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -586,7 +660,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#场景"><span class="nav-number">1.</span> <span class="nav-text">场景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#wireguard介绍"><span class="nav-number">2.</span> <span class="nav-text">wireguard介绍</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#环境"><span class="nav-number">3.</span> <span class="nav-text">环境</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#配置方式"><span class="nav-number">4.</span> <span class="nav-text">配置方式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#解决ssh长输出变卡"><span class="nav-number">5.</span> <span class="nav-text">解决ssh长输出变卡</span></a></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#第一周-00-08"><span class="nav-number">2.</span> <span class="nav-text">第一周 00-08</span></a></li></ol></div>
             
 
           </div>
