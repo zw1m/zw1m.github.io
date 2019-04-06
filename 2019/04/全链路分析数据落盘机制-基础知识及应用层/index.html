@@ -66,7 +66,7 @@
 
 
 
-  <meta name="keywords" content="Hexo, NexT">
+  <meta name="keywords" content="IO,刷盘,">
 
 
 
@@ -77,18 +77,18 @@
 
 
 
-<meta name="description" content="个人小站。致力于为运维及研发提供准确、靠谱的运维资料和经验。">
-<meta name="keywords" content="运维、DevOPS、性能、体系、架构、x86">
-<meta property="og:type" content="website">
-<meta property="og:title" content="标签">
-<meta property="og:url" content="http://blog.zw1m.com/tags/index.html">
+<meta name="description" content="前言本文介绍一些Linux系统基础知识，用于更好地理解内核和IO链路。此外，本文也介绍一些应用层来保障数据落盘的机制，例如fsync，fdatasync等。 库函数和系统调用介绍 库函数是为了方便人们编写应用程序。库函数（library function），是由用户或组织自己开发的，具有一定功能的函数集合，一般具有较好平台移植性，通过库文件（静态库或动态库）向程序员提供功能性调用。程序员无需关心平">
+<meta name="keywords" content="IO,刷盘">
+<meta property="og:type" content="article">
+<meta property="og:title" content="全链路分析数据落盘机制-基础知识及应用层">
+<meta property="og:url" content="http://blog.zw1m.com/2019/04/全链路分析数据落盘机制-基础知识及应用层/index.html">
 <meta property="og:site_name" content="运维深处">
-<meta property="og:description" content="个人小站。致力于为运维及研发提供准确、靠谱的运维资料和经验。">
+<meta property="og:description" content="前言本文介绍一些Linux系统基础知识，用于更好地理解内核和IO链路。此外，本文也介绍一些应用层来保障数据落盘的机制，例如fsync，fdatasync等。 库函数和系统调用介绍 库函数是为了方便人们编写应用程序。库函数（library function），是由用户或组织自己开发的，具有一定功能的函数集合，一般具有较好平台移植性，通过库文件（静态库或动态库）向程序员提供功能性调用。程序员无需关心平">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-03-20T02:36:00.694Z">
+<meta property="og:updated_time" content="2019-04-06T12:42:54.305Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="标签">
-<meta name="twitter:description" content="个人小站。致力于为运维及研发提供准确、靠谱的运维资料和经验。">
+<meta name="twitter:title" content="全链路分析数据落盘机制-基础知识及应用层">
+<meta name="twitter:description" content="前言本文介绍一些Linux系统基础知识，用于更好地理解内核和IO链路。此外，本文也介绍一些应用层来保障数据落盘的机制，例如fsync，fdatasync等。 库函数和系统调用介绍 库函数是为了方便人们编写应用程序。库函数（library function），是由用户或组织自己开发的，具有一定功能的函数集合，一般具有较好平台移植性，通过库文件（静态库或动态库）向程序员提供功能性调用。程序员无需关心平">
 
 
 
@@ -118,13 +118,13 @@
 
 
 
-  <link rel="canonical" href="http://blog.zw1m.com/tags/">
+  <link rel="canonical" href="http://blog.zw1m.com/2019/04/全链路分析数据落盘机制-基础知识及应用层/">
 
 
 
 
 
-  <title>标签 | 运维深处</title>
+  <title>全链路分析数据落盘机制-基础知识及应用层 | 运维深处</title>
   
 
 
@@ -281,40 +281,226 @@
 
   <div id="posts" class="posts-expand">
     
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/04/全链路分析数据落盘机制-基础知识及应用层/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Roger K">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="运维深处">
+    </span>
+
     
-    
-    <div class="post-block page">
       <header class="post-header">
 
-	<h1 class="post-title" itemprop="name headline">标签</h1>
-
-
-
-</header>
-
-      
-      
-      
-      <div class="post-body">
         
         
-          <div class="tag-cloud">
-            <div class="tag-cloud-title">
-                目前共计 7 个标签
-            </div>
-            <div class="tag-cloud-tags">
-              <a href="/tags/CPU/" style="font-size: 12px; color: #ccc">CPU</a> <a href="/tags/IO/" style="font-size: 30px; color: #111">IO</a> <a href="/tags/SCSI/" style="font-size: 18px; color: #8e8e8e">SCSI</a> <a href="/tags/VPN/" style="font-size: 12px; color: #ccc">VPN</a> <a href="/tags/wireguard/" style="font-size: 12px; color: #ccc">wireguard</a> <a href="/tags/刷盘/" style="font-size: 24px; color: #4f4f4f">刷盘</a> <a href="/tags/性能监控/" style="font-size: 18px; color: #8e8e8e">性能监控</a>
-            </div>
-          </div>
+          <h1 class="post-title" itemprop="name headline">全链路分析数据落盘机制-基础知识及应用层</h1>
         
-      </div>
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-04-06T20:41:40+08:00">
+                2019-04-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/体系结构/" itemprop="url" rel="index">
+                    <span itemprop="name">体系结构</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
       
       
+
+      
+        <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>本文介绍一些Linux系统基础知识，用于更好地理解内核和IO链路。此外，本文也介绍一些应用层来保障数据落盘的机制，例如fsync，fdatasync等。</p>
+<h3 id="库函数和系统调用"><a href="#库函数和系统调用" class="headerlink" title="库函数和系统调用"></a>库函数和系统调用</h3><h4 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h4><ul>
+<li><p>库函数是为了方便人们编写应用程序。<br>库函数（library function），是由用户或组织自己开发的，具有一定功能的函数集合，一般具有较好平台移植性，通过库文件（静态库或动态库）向程序员提供功能性调用。程序员无需关心平台差异，由库来屏蔽平台差异性。</p>
+</li>
+<li><p>系统调用是为了方便应用使用操作系统的接口。<br>系统调用（system call），指运行在用户空间的应用程序向操作系统内核请求某些服务的调用过程。 系统调用提供了用户程序与操作系统之间的接口。一般来说，系统调用都在内核态执行。由于系统调用不考虑平台差异性，由内核直接提供，因而移植性较差（几乎无移植性）。</p>
+</li>
+<li><p>常见库函数<br>printf，scanf，fopen，fclose，fgetc，fgets，fprintf，fsacnf，fputc，calloc，free，malloc，realloc，strcat，strchr，strcmp，strcpy，strlen，strstr等，需要包含stdio.h，string.h，alloc.h，stdlib.h等头文件。</p>
+</li>
+<li><p>常见系统调用<br>open, close, read, write, ioctl，fork，clone，exit，getpid，access，chdir，chmod，stat，brk，mmap等，需要包含unistd.h等头文件。</p>
+</li>
+</ul>
+<h4 id="区别"><a href="#区别" class="headerlink" title="区别"></a>区别</h4><ul>
+<li>所有 C 函数库是相同的，而各个操作系统的系统调用是不同的。</li>
+<li>函数库调用是调用函数库中的一个程序，而系统调用是调用系统内核的服务。</li>
+<li>函数库调用是与用户程序相联系，而系统调用是操作系统的一个进入点</li>
+<li>函数库调用是在用户地址空间执行，而系统调用是在内核地址空间执行</li>
+<li>函数库调用的运行时间属于「用户」时间，而系统调用的运行时间属于「系统」时间</li>
+<li>函数库调用属于过程调用，开销较小，而系统调用需要切换到内核上下文环境然后切换回来，开销较大</li>
+<li>在C函数库libc中大约 300 个程序，在 UNIX 中大约有 90 个系统调用</li>
+<li>函数库典型的 C 函数：system, fprintf, malloc，而典型的系统调用：chdir, fork, write, brk</li>
+</ul>
+<h4 id="查询"><a href="#查询" class="headerlink" title="查询"></a>查询</h4><p>系统调用属于man的第二部分，库函数属于man的第三部分。<br><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">man man</span><br><span class="line">2  <span class="built_in"> System </span>calls (functions provided by the kernel)</span><br><span class="line">3   Library calls (functions within program libraries)</span><br><span class="line">man 2 open</span><br></pre></td></tr></table></figure></p>
+<ul>
+<li>库函数：man 3 fopen</li>
+<li>系统调用：man 2 open</li>
+</ul>
+<p>以c语言库函数举例，glibc库函数头文件属于glibc-headers包：<br><figure class="highlight autoit"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[root<span class="symbol">@MiWiFi</span>-R1CM-srv ~]<span class="meta"># rpm -qf /usr/<span class="meta-keyword">include</span>/stdio.h </span></span><br><span class="line">glibc-headers<span class="number">-2.17</span><span class="number">-260.</span>el7_6<span class="number">.3</span>.x86_64</span><br><span class="line">[root<span class="symbol">@MiWiFi</span>-R1CM-srv ~]<span class="meta"># rpm -qf /usr/<span class="meta-keyword">include</span>/unistd.h</span></span><br><span class="line">glibc-headers<span class="number">-2.17</span><span class="number">-260.</span>el7_6<span class="number">.3</span>.x86_64</span><br></pre></td></tr></table></figure></p>
+<p>系统调用头文件属于kernel-headers包：<br><figure class="highlight autoit"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root<span class="symbol">@MiWiFi</span>-R1CM-srv ~]<span class="meta"># rpm -qf /usr/<span class="meta-keyword">include</span>/asm/unistd_64.h </span></span><br><span class="line">kernel-headers<span class="number">-3.10</span><span class="number">.0</span><span class="number">-957.5</span><span class="number">.1</span>.el7.x86_64</span><br></pre></td></tr></table></figure></p>
+<p>对应跟踪工具，ltrace和strace<br><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ltrace - A library call tracer</span><br><span class="line">strace - trace<span class="built_in"> system </span>calls <span class="keyword">and</span> signals</span><br></pre></td></tr></table></figure></p>
+<h3 id="应用层的刷盘"><a href="#应用层的刷盘" class="headerlink" title="应用层的刷盘"></a>应用层的刷盘</h3><h4 id="python"><a href="#python" class="headerlink" title="python"></a>python</h4><p>python3.3以上使用os.sync。<br><figure class="highlight applescript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">os.sync()</span><br><span class="line">Force <span class="built_in">write</span> <span class="keyword">of</span> everything <span class="keyword">to</span> disk.</span><br><span class="line">Availability: Unix.</span><br><span class="line">New <span class="keyword">in</span> <span class="built_in">version</span> <span class="number">3.3</span>.</span><br></pre></td></tr></table></figure></p>
+<p>python2需要引用外部。<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">import</span> ctypes</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>libc = ctypes.CDLL(<span class="string">"libc.so.6"</span>)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>libc.sync()</span><br><span class="line"><span class="number">0</span></span><br></pre></td></tr></table></figure></p>
+<h4 id="Java"><a href="#Java" class="headerlink" title="Java"></a>Java</h4><p>JDK中有三种方式可以强制文件数据落盘：</p>
+<ul>
+<li><p>调用 FileDescriptor#sync函数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">调用IO_Sync来执行数据同步</span><br><span class="line">IO_Sync在UNIX系统上的定义就是 fsync</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>调用 FileChannel#force函数</p>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">FileChannel<span class="selector-id">#force</span> 调用 FileDispatcher#force</span><br><span class="line">通过 metaData 参数来区分调用 fsync 和 fdatasync</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>使用 RandomAccessFile 以 rws 或者 rwd 模式打开文件</p>
+<figure class="highlight arduino"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">“rws” 还要求对文件的内容或元数据的每个更新都同步写入到底层存储设备。</span><br><span class="line">“rwd” 还要求对文件内容的每个更新都同步写入到底层存储设备。</span><br><span class="line">rws 模式会在 <span class="built_in">open</span> 文件时传入 O_SYNC 标志位。 </span><br><span class="line">rwd 模式会在 <span class="built_in">open</span> 文件时传入 O_DSYNC 标志位。</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h4 id="C语言"><a href="#C语言" class="headerlink" title="C语言"></a>C语言</h4><ul>
+<li>UNIX系统提供了三个系统调用来执行刷新内核缓冲区： sync ， fsync ， fdatasync 。</li>
+</ul>
+<ol>
+<li>sync函数将所有修改过的块缓冲区落盘再返回。</li>
+<li>fsync对指定文件生效，传输内核缓冲区中这个文件的数据落盘再返回。包含数据与文件系统元数据。</li>
+<li>fdatasync仅刷新数据，不刷新文件系统元数据。</li>
+</ol>
+<ul>
+<li>除了上面三个系统调用， open 系统调用在打开文件时，可以设置和同步相关的标志位： O_SYNC 和 O_DSYNC 。</li>
+</ul>
+<ol>
+<li>设置 O_SYNC 的效果相当于是每次 write 后自动调用 fsync 。</li>
+<li>设置 O_DSYNC 的效果相当于是每次 write 后自动调用 fdatasync 。</li>
+</ol>
+<h4 id="总结："><a href="#总结：" class="headerlink" title="总结："></a>总结：</h4><p>从Python和Java可以看出来，这些高级语言，为了保证数据落盘，绕来绕去都回到C语言库的fsync和fdatasync。<br>接下来的文章，我们在文件系统层和块设备层进一步分析。</p>
+
       
     </div>
     
     
     
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/IO/" rel="tag"># IO</a>
+          
+            <a href="/tags/刷盘/" rel="tag"># 刷盘</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/04/Linux性能优化实战笔记-CPU篇/" rel="next" title="Linux性能优化实战笔记-CPU篇">
+                <i class="fa fa-chevron-left"></i> Linux性能优化实战笔记-CPU篇
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
   </div>
 
 
@@ -352,8 +538,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
 
-      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+      <section class="site-overview-wrap sidebar-panel">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
@@ -429,6 +624,22 @@
         </div>
       </section>
 
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#库函数和系统调用"><span class="nav-number">2.</span> <span class="nav-text">库函数和系统调用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#介绍"><span class="nav-number">2.1.</span> <span class="nav-text">介绍</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#区别"><span class="nav-number">2.2.</span> <span class="nav-text">区别</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#查询"><span class="nav-number">2.3.</span> <span class="nav-text">查询</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#应用层的刷盘"><span class="nav-number">3.</span> <span class="nav-text">应用层的刷盘</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#python"><span class="nav-number">3.1.</span> <span class="nav-text">python</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Java"><span class="nav-number">3.2.</span> <span class="nav-text">Java</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#C语言"><span class="nav-number">3.3.</span> <span class="nav-text">C语言</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#总结："><span class="nav-number">3.4.</span> <span class="nav-text">总结：</span></a></li></ol></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
       
 
       
