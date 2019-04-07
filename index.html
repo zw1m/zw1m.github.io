@@ -293,6 +293,155 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/04/全链路分析数据落盘机制-文件系统层及块设备层/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Roger K">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="运维深处">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/04/全链路分析数据落盘机制-文件系统层及块设备层/" itemprop="url">全链路分析数据落盘机制-文件系统层及块设备层</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-04-07T17:31:08+08:00">
+                2019-04-07
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/体系结构/" itemprop="url" rel="index">
+                    <span itemprop="name">体系结构</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>本文从文件系统和块设备层介绍Linux内核关于数据落盘的机制。</p>
+<h3 id="总结之前的内容"><a href="#总结之前的内容" class="headerlink" title="总结之前的内容"></a>总结之前的内容</h3><h4 id="sync、fsync、fdatasync-和-fflush"><a href="#sync、fsync、fdatasync-和-fflush" class="headerlink" title="sync、fsync、fdatasync 和 fflush"></a>sync、fsync、fdatasync 和 fflush</h4><ul>
+<li>fopen(3)属于C标准库的函数，以数据流（stream）方式打开文件，fwrite(3)是写入应用层缓冲（glibc实现），不保证落盘，但有一个叫fflush(3)的函数好像有用？实际上fflush也属于C标准库，它仅仅是把应用层缓冲写入内核缓冲（pagecache），所以fflush和数据落盘也不沾边。</li>
+<li>sync(2)、fsync(2)、fdatasync(2)属于系统调用，应用程序调用时，内核会把内核缓冲（pagecache）数据写入磁盘。</li>
+<li>open属于系统调用，以文件描述符打开文件，使用O_DIRECT标志位来禁用pagecache。使用O_SYNC，O_DSYNC来达到每次write都实现fsync和fdatasync的效果，否则fsync和fdatasync只能作用一次。</li>
+<li>fsync(2)、fdatasync(2)的区别仅仅是，fdatasync不保证文件系统元数据落盘，性能更好，但有安全风险。</li>
+</ul>
+<p>这张图表明了这些层次关系，Summary of IO buffering：<br><img src="/2019/04/全链路分析数据落盘机制-文件系统层及块设备层/cache.png" alt="IO buffering"></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/04/全链路分析数据落盘机制-基础知识及应用层/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -706,179 +855,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/03/全链路分析数据落盘机制-跟踪sync命令/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Roger K">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="运维深处">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/全链路分析数据落盘机制-跟踪sync命令/" itemprop="url">全链路分析数据落盘机制-跟踪sync命令</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-27T10:39:06+08:00">
-                2019-03-27
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/体系结构/" itemprop="url" rel="index">
-                    <span itemprop="name">体系结构</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>本文面向初学者，用sync这条命令来介绍刷盘经历了哪些过程，以及sync命令如何保证数据落盘。<br>本文可以了解一些跟踪系统调用的知识。</p>
-<h3 id="sync函数"><a href="#sync函数" class="headerlink" title="sync函数"></a>sync函数</h3><p>通过man sync可以看到，sync - flush file system buffers<br>Force changed blocks to disk, update the super block.<br>info命令还可以看到更多介绍：<br><figure class="highlight livecodeserver"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">info coreutils <span class="string">'sync invocation'</span></span><br><span class="line"></span><br><span class="line"><span class="string">'sync'</span> writes <span class="keyword">any</span> data buffered <span class="keyword">in</span> memory out <span class="built_in">to</span> disk.  This can <span class="built_in">include</span></span><br><span class="line">(but is <span class="keyword">not</span> limited <span class="built_in">to</span>) modified superblocks, modified inodes, <span class="keyword">and</span></span><br><span class="line">delayed reads <span class="keyword">and</span> writes.  This must be implemented <span class="keyword">by</span> <span class="keyword">the</span> kernel; The</span><br><span class="line"><span class="string">'sync'</span> program does nothing but exercise <span class="keyword">the</span> <span class="string">'sync'</span> <span class="keyword">system</span> call.</span><br><span class="line"></span><br><span class="line">   The kernel keeps data <span class="keyword">in</span> memory <span class="built_in">to</span> avoid doing (relatively slow) disk</span><br><span class="line">reads <span class="keyword">and</span> writes.  This improves performance, but <span class="keyword">if</span> <span class="keyword">the</span> computer</span><br><span class="line">crashes, data may be lost <span class="keyword">or</span> <span class="keyword">the</span> <span class="built_in">file</span> <span class="keyword">system</span> corrupted <span class="keyword">as</span> <span class="keyword">a</span> <span class="built_in">result</span>.  The</span><br><span class="line"><span class="string">'sync'</span> <span class="keyword">command</span> <span class="title">ensures</span> <span class="title">everything</span> <span class="title">in</span> <span class="title">memory</span> <span class="title">is</span> <span class="title">written</span> <span class="title">to</span> <span class="title">disk</span>.</span><br></pre></td></tr></table></figure></p>
-<p>sync命令属于coreutils这个rpm包，coreutils-8.22/src/sync.c。<br>打开源码，发现没有实际内容，只有最后的sync()函数有意义。<br>接下来查看sync()函数的说明，使用man 2 sync。<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">NAME</span><br><span class="line">sync, syncfs - <span class="keyword">commit</span> buffer <span class="keyword">cache</span> <span class="keyword">to</span> disk</span><br><span class="line"></span><br><span class="line"><span class="comment">#include &lt;unistd.h&gt;</span></span><br><span class="line"></span><br><span class="line">DESCRIPTION</span><br><span class="line">       <span class="keyword">sync</span>() causes <span class="keyword">all</span> buffered modifications <span class="keyword">to</span> <span class="keyword">file</span> metadata <span class="keyword">and</span> <span class="keyword">data</span> <span class="keyword">to</span> be written <span class="keyword">to</span> the underlying <span class="keyword">file</span> systems.</span><br></pre></td></tr></table></figure></p>
-<p>可以看到/usr/include/unistd.h，这个文件属于glibc，属于glibc-headers这个rpm包，<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Make all changes done to all files actually appear on disk.  */</span></span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">void</span> <span class="title">sync</span> <span class="params">(<span class="keyword">void</span>)</span> __THROW</span>;</span><br></pre></td></tr></table></figure></p>
-<p>glibc的unistd.h里sync函数，是对sync系统调用的一个包装，因为刷盘是一个与内核强相关的底层操作，glibc作为标准C库，仅靠自身是无法实现这些功能的，要借助内核来实现。</p>
-<p>下面背景知识和概念需要了解：</p>
-<ul>
-<li>libc实际上是一个泛指。凡是符合实现了C标准规定的内容，都是一种libc。</li>
-<li>glibc是GNU组织对libc的一种实现。它是unix/linux的根基之一。</li>
-<li>几乎所有C程序都要调用glibc的库函数，所以glibc是Linux平台C程序运行的基础。</li>
-<li>glibc除了封装linux操作系统所提供的系统服务外，它本身也提供了许多其它一些必要功能服务的实现。</li>
-<li>系统调用（system call）是指操作系统提供给程序调用的接口。</li>
-<li>glibc中的open,read,write,close,stat,mkdir等函数其实都是是系统调用，准确的讲是系统调用的封装函数。</li>
-</ul>
-<h3 id="sync系统调用"><a href="#sync系统调用" class="headerlink" title="sync系统调用"></a>sync系统调用</h3><p>接下来，我们需要从glibc的sync函数，分析到sync的系统调用。<br>内核的unistd.h头文件在/usr/include/linux/unistd.h，属于kernel-headers这个rpm包。<br>接着又指向/usr/include/asm/unistd.h，根据体系结构，指向unistd_64.h。<br>unistd_64.h 里面看到有__NR_sync的宏定义，162这个数字就是这个sync系统调用的编号。<br>在/usr/include/asm-generic/unistd.h里，指出了源文件和函数名sys_sync。<br><figure class="highlight sqf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* fs/sync.c */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __NR_sync 81</span></span><br><span class="line"><span class="variable">__SYSCALL</span>(<span class="variable">__NR_sync</span>, sys_sync)</span><br></pre></td></tr></table></figure></p>
-<p>这里需要注意，在不同的体系结构里，系统调用号是不同的。<br>asm-generic/unistd.h里的sync系统调用编号是81，因为asm-generic这是一个通用的系统调用编号文件，在我们x86_64系统里不适用。我们需要参考asm/unistd_64.h里的编号，也就是162。可以使用gcc编译器命令来查看预定义的宏的调用，也指向asm/unistd_64.h。<br><figure class="highlight lsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv linux]# echo -n <span class="string">"#include &lt;sys/syscall.h&gt;"</span> | gcc -E -</span><br><span class="line"># <span class="number">1</span> <span class="string">"&lt;stdin&gt;"</span></span><br><span class="line"># <span class="number">1</span> <span class="string">"&lt;built-in&gt;"</span></span><br><span class="line"># <span class="number">1</span> <span class="string">"&lt;命令行&gt;"</span></span><br><span class="line"># <span class="number">1</span> <span class="string">"/usr/include/stdc-predef.h"</span> <span class="number">1</span> <span class="number">3</span> <span class="number">4</span></span><br><span class="line"># <span class="number">1</span> <span class="string">"&lt;命令行&gt;"</span> <span class="number">2</span></span><br><span class="line"># <span class="number">1</span> <span class="string">"&lt;stdin&gt;"</span></span><br><span class="line"># <span class="number">1</span> <span class="string">"/usr/include/sys/syscall.h"</span> <span class="number">1</span> <span class="number">3</span> <span class="number">4</span></span><br><span class="line"># <span class="number">24</span> <span class="string">"/usr/include/sys/syscall.h"</span> <span class="number">3</span> <span class="number">4</span></span><br><span class="line"># <span class="number">1</span> <span class="string">"/usr/include/asm/unistd.h"</span> <span class="number">1</span> <span class="number">3</span> <span class="number">4</span></span><br><span class="line"># <span class="number">12</span> <span class="string">"/usr/include/asm/unistd.h"</span> <span class="number">3</span> <span class="number">4</span></span><br><span class="line"># <span class="number">1</span> <span class="string">"/usr/include/asm/unistd_64.h"</span> <span class="number">1</span> <span class="number">3</span> <span class="number">4</span></span><br><span class="line"># <span class="number">13</span> <span class="string">"/usr/include/asm/unistd.h"</span> <span class="number">2</span> <span class="number">3</span> <span class="number">4</span></span><br><span class="line"># <span class="number">25</span> <span class="string">"/usr/include/sys/syscall.h"</span> <span class="number">2</span> <span class="number">3</span> <span class="number">4</span></span><br><span class="line">...</span><br><span class="line"># <span class="number">1</span> <span class="string">"/usr/include/bits/syscall.h"</span> <span class="number">1</span> <span class="number">3</span> <span class="number">4</span></span><br><span class="line"># <span class="number">32</span> <span class="string">"/usr/include/sys/syscall.h"</span> <span class="number">2</span> <span class="number">3</span> <span class="number">4</span></span><br><span class="line"># <span class="number">1</span> <span class="string">"&lt;stdin&gt;"</span> <span class="number">2</span></span><br></pre></td></tr></table></figure></p>
-<p>由此，可以知道fs/sync.c就是我们要找的源文件。<br>linux-3.10.0-957.5.1.el7.x86_64/fs/sync.c</p>
-<h3 id="fs-sync-c"><a href="#fs-sync-c" class="headerlink" title="fs/sync.c"></a>fs/sync.c</h3><p>这个文件包含sync相关的函数定义：High-level sync()-related operations<br>需要注意，这里无法直接找到sync函数定义，需要用宏定义展开SYSCALL_DEFINE0(sync)才能得到sys_sync函数。<br><figure class="highlight vbscript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">/*</span><br><span class="line"> * Sync everything. We start by waking flusher threads so that most of</span><br><span class="line"> * writeback runs <span class="keyword">on</span> all devices <span class="keyword">in</span> parallel. <span class="keyword">Then</span> we sync all inodes reliably</span><br><span class="line"> * which effectively also waits <span class="keyword">for</span> all flusher threads <span class="keyword">to</span> finish doing</span><br><span class="line"> * writeback. At this point all data <span class="keyword">is</span> <span class="keyword">on</span> disk so metadata should be stable</span><br><span class="line"> * <span class="keyword">and</span> we tell filesystems <span class="keyword">to</span> sync their metadata via -&gt;sync_fs() calls.</span><br><span class="line"> * Finally, we writeout all block devices because some filesystems (e.g. ext2)</span><br><span class="line"> * just write metadata (such as inodes <span class="keyword">or</span> bitmaps) <span class="keyword">to</span> block device page cache</span><br><span class="line"> * <span class="keyword">and</span> <span class="keyword">do</span> <span class="keyword">not</span> sync it <span class="keyword">on</span> their own <span class="keyword">in</span> -&gt;sync_fs().</span><br><span class="line"> */</span><br><span class="line">SYSCALL_DEFINE0(sync)</span><br><span class="line">&#123;</span><br><span class="line">        <span class="built_in">int</span> nowait = <span class="number">0</span>, wait = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">        wakeup_flusher_threads(<span class="number">0</span>, WB_REASON_SYNC);</span><br><span class="line">        iterate_supers(sync_inodes_one_sb, <span class="literal">NULL</span>);</span><br><span class="line">        iterate_supers(sync_fs_one_sb, &amp;nowait);</span><br><span class="line">        iterate_supers(sync_fs_one_sb, &amp;wait);</span><br><span class="line">        iterate_bdevs(fdatawrite_one_bdev, <span class="literal">NULL</span>);</span><br><span class="line">        iterate_bdevs(fdatawait_one_bdev, <span class="literal">NULL</span>);</span><br><span class="line">        <span class="keyword">if</span> (unlikely(laptop_mode))</span><br><span class="line">                laptop_sync_completion();</span><br><span class="line">        return <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>SYSCALL_DEFINE0这个宏在linux/syscalls.h里定义：<br><figure class="highlight clean"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">#define SYSCALL_DEFINE0(sname)                                  \</span><br><span class="line">        SYSCALL_METADATA(_##sname, <span class="number">0</span>);                          \</span><br><span class="line">        asmlinkage long sys_##sname(void)</span><br></pre></td></tr></table></figure></p>
-<p>所以SYSCALL_DEFINE0(sync)展开得到：<br><figure class="highlight lisp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SYSCALL_METADATA(<span class="name">_sync</span>, <span class="number">0</span>)<span class="comment">;                          \</span></span><br><span class="line">asmlinkage long sys_sync(<span class="name">void</span>)</span><br></pre></td></tr></table></figure></p>
-<p>至此，我们就得到了sys_sync这个系统调用函数。</p>
-<h3 id="sys-sync以及相关实验"><a href="#sys-sync以及相关实验" class="headerlink" title="sys_sync以及相关实验"></a>sys_sync以及相关实验</h3><p>对于sys_sync这个系统调用函数，非常底层的代码我们不做分析了，内核水太深，我们这里用两个工具来测试。</p>
-<h4 id="ftrace跟踪调用过程"><a href="#ftrace跟踪调用过程" class="headerlink" title="ftrace跟踪调用过程"></a>ftrace跟踪调用过程</h4><p>我们可以用ftrace跟踪sync完整的调用过程。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]<span class="comment"># cat function.sh </span></span><br><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line">debugfs=/sys/kernel/debug</span><br><span class="line"><span class="built_in">echo</span> nop &gt; <span class="variable">$debugfs</span>/tracing/current_tracer</span><br><span class="line"><span class="built_in">echo</span> 0 &gt; <span class="variable">$debugfs</span>/tracing/tracing_on</span><br><span class="line"><span class="built_in">echo</span> $$ &gt; <span class="variable">$debugfs</span>/tracing/set_ftrace_pid</span><br><span class="line"><span class="built_in">echo</span> function_graph &gt; <span class="variable">$debugfs</span>/tracing/current_tracer</span><br><span class="line"><span class="comment">#replace test_proc_show by your function name</span></span><br><span class="line"><span class="built_in">echo</span> sys_sync &gt; <span class="variable">$debugfs</span>/tracing/set_graph_function</span><br><span class="line"><span class="built_in">echo</span> 1 &gt; <span class="variable">$debugfs</span>/tracing/tracing_on</span><br><span class="line"><span class="built_in">exec</span> <span class="string">"<span class="variable">$@</span>"</span></span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ~]<span class="comment"># sh function.sh sync</span></span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ~]<span class="comment"># cat /sys/kernel/debug/tracing/trace &gt; 1</span></span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ~]<span class="comment"># head 1</span></span><br><span class="line"><span class="comment"># tracer: function_graph</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># CPU  DURATION                  FUNCTION CALLS</span></span><br><span class="line"><span class="comment"># |     |   |                     |   |   |   |</span></span><br><span class="line"> 5)               |  <span class="function"><span class="title">sys_sync</span></span>() &#123;</span><br><span class="line"> 5)               |    <span class="function"><span class="title">wakeup_flusher_threads</span></span>() &#123;</span><br><span class="line"> 5)               |      <span class="function"><span class="title">get_nr_dirty_pages</span></span>() &#123;</span><br><span class="line"> 5)               |        <span class="function"><span class="title">get_nr_dirty_inodes</span></span>() &#123;</span><br><span class="line"> 5)   0.163 us    |          get_nr_inodes();</span><br><span class="line"> 5)   0.608 us    |        &#125;</span><br><span class="line"> </span><br><span class="line">[root@MiWiFi-R1CM-srv ~]<span class="comment"># echo 0 &gt; /sys/kernel/debug/tracing/tracing_on</span></span><br></pre></td></tr></table></figure></p>
-<p>可以参考，还有vim配置用于展开ftrace文件：<a href="https://mp.weixin.qq.com/s?__biz=MzAwMDUwNDgxOA==&amp;mid=2652663542&amp;idx=1&amp;sn=1e19be71d650eba288b0341d09e164df&amp;chksm=810f286bb678a17d06b4659d00717517f3f65ab8a6452a33e799b6010b00814895647bc188d7&amp;scene=21#wechat_redirect" target="_blank" rel="noopener">宋宝华：关于Ftrace的一个完整案例</a></p>
-<h4 id="systemtap验证同步调用"><a href="#systemtap验证同步调用" class="headerlink" title="systemtap验证同步调用"></a>systemtap验证同步调用</h4><p>我们用systemtap来延长硬件刷盘底层函数时间，来验证上层的sync是一个同步阻塞调用。<br>从代码来看，sync_fs_one_sb, &amp;wait的确是一个同步调用。但是网上搜到的很多资料说sync是一个异步调用，不能保证数据落盘，还要多敲几次，多等待，这点非常存疑（搞笑，那sync命令有什么用？）。<br>使用systemtap来做实验，是比研读内核代码以外更快的验证方法。<br>根据上一篇文章，我们知道，当有刷盘的数据落盘时，一定会执行ata_scsi_flush_xlat这个函数，我们尝试把这个函数延长1秒：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# stap -g -v -e <span class="string">'probe module("libata").function("ata_scsi_flush_xlat").return &#123;mdelay(1000)&#125;'</span></span><br><span class="line">Pass <span class="number">1</span>: parsed user script and <span class="number">470</span> library scripts using <span class="number">244796</span>virt/<span class="number">42192</span>res/<span class="number">3488s</span>hr/<span class="number">38848d</span>ata kb, in <span class="number">210</span>usr/<span class="number">20s</span>ys/<span class="number">227</span><span class="built_in">real</span> ms.</span><br><span class="line">Pass <span class="number">2</span>: analyzed script: <span class="number">1</span> probe, <span class="number">1</span> function, <span class="number">1</span> embed, <span class="number">0</span> globals using <span class="number">246768</span>virt/<span class="number">45252</span>res/<span class="number">4428s</span>hr/<span class="number">40820d</span>ata kb, in <span class="number">30</span>usr/<span class="number">50s</span>ys/<span class="number">76</span><span class="built_in">real</span> ms.</span><br><span class="line">Pass <span class="number">3</span>: using cached /root/.systemtap/cache/<span class="number">0f</span>/stap_0f1684821eb395fa3d8126b925059598_1315.c</span><br><span class="line">Pass <span class="number">4</span>: using cached /root/.systemtap/cache/<span class="number">0f</span>/stap_0f1684821eb395fa3d8126b925059598_1315.ko</span><br><span class="line">Pass <span class="number">5</span>: starting run.</span><br></pre></td></tr></table></figure></p>
-<p>新开一个终端：可以看到，sync的时间明显变长，而且一直卡住直到结束。可以说明sync这是一个同步调用，会保证数据落盘再返回。<br><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# touch 2</span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# time sync</span><br><span class="line"></span><br><span class="line">real	0m2.007s</span><br><span class="line">user	0m0.334s</span><br><span class="line">sys	0m0.668s</span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# touch 3</span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# time sync</span><br><span class="line"></span><br><span class="line">real	0m1.961s</span><br><span class="line">user	0m0.000s</span><br><span class="line">sys	0m0.001s</span><br></pre></td></tr></table></figure></p>
-<h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><p>不详述所有参考，贴一些重要的：<br><a href="https://lwn.net/Articles/604287/" target="_blank" rel="noopener">Anatomy of a system call, part 1</a><br><a href="https://lwn.net/Articles/604515/" target="_blank" rel="noopener">Anatomy of a system call, part 1</a></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right"></i></a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -925,7 +906,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">6</span>
+                  <span class="site-state-item-count">7</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>

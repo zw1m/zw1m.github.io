@@ -66,7 +66,7 @@
 
 
 
-  <meta name="keywords" content="性能监控,IO,">
+  <meta name="keywords" content="Hexo, NexT">
 
 
 
@@ -77,18 +77,17 @@
 
 
 
-<meta name="description" content="前言本文主要面向初级工程师，假设你已经对的Linux性能监控工具有所了解，例如top、vmstat、mpstat、iostat等。 日常工作中，碰到IO性能问题是常有的事，本文主要探讨Linux下的IO监控里容易产生误区的点。 这些误区，一方面是因为工程师想当然，不仔细看文档，不理解底层细节。另一方面是因为Linux内核和监控工具的发展，落后于存储设备硬件的发展，软硬件发展存在脱节，因此监控工具不">
-<meta name="keywords" content="性能监控,IO">
-<meta property="og:type" content="article">
-<meta property="og:title" content="纠正几个Linux的IO监控指标的误区">
-<meta property="og:url" content="http://blog.zw1m.com/2019/03/纠正几个Linux的IO监控指标的误区/index.html">
+<meta name="description" content="个人小站。致力于为运维及研发提供准确、靠谱的运维资料和经验。">
+<meta name="keywords" content="运维、DevOPS、性能、体系、架构、x86">
+<meta property="og:type" content="website">
+<meta property="og:title" content="运维深处">
+<meta property="og:url" content="http://blog.zw1m.com/page/3/index.html">
 <meta property="og:site_name" content="运维深处">
-<meta property="og:description" content="前言本文主要面向初级工程师，假设你已经对的Linux性能监控工具有所了解，例如top、vmstat、mpstat、iostat等。 日常工作中，碰到IO性能问题是常有的事，本文主要探讨Linux下的IO监控里容易产生误区的点。 这些误区，一方面是因为工程师想当然，不仔细看文档，不理解底层细节。另一方面是因为Linux内核和监控工具的发展，落后于存储设备硬件的发展，软硬件发展存在脱节，因此监控工具不">
+<meta property="og:description" content="个人小站。致力于为运维及研发提供准确、靠谱的运维资料和经验。">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-03-22T12:47:40.238Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="纠正几个Linux的IO监控指标的误区">
-<meta name="twitter:description" content="前言本文主要面向初级工程师，假设你已经对的Linux性能监控工具有所了解，例如top、vmstat、mpstat、iostat等。 日常工作中，碰到IO性能问题是常有的事，本文主要探讨Linux下的IO监控里容易产生误区的点。 这些误区，一方面是因为工程师想当然，不仔细看文档，不理解底层细节。另一方面是因为Linux内核和监控工具的发展，落后于存储设备硬件的发展，软硬件发展存在脱节，因此监控工具不">
+<meta name="twitter:title" content="运维深处">
+<meta name="twitter:description" content="个人小站。致力于为运维及研发提供准确、靠谱的运维资料和经验。">
 
 
 
@@ -118,13 +117,13 @@
 
 
 
-  <link rel="canonical" href="http://blog.zw1m.com/2019/03/纠正几个Linux的IO监控指标的误区/">
+  <link rel="canonical" href="http://blog.zw1m.com/page/3/">
 
 
 
 
 
-  <title>纠正几个Linux的IO监控指标的误区 | 运维深处</title>
+  <title>运维深处</title>
   
 
 
@@ -143,7 +142,8 @@
     
   
 
-  <div class="container sidebar-position-left page-post-detail">
+  <div class="container sidebar-position-left 
+  page-home">
     <div class="headband"></div>
 
     <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
@@ -278,9 +278,9 @@
         <div class="content-wrap">
           <div id="content" class="content">
             
-
-  <div id="posts" class="posts-expand">
+  <section id="posts" class="posts-expand">
     
+      
 
   
 
@@ -310,7 +310,9 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">纠正几个Linux的IO监控指标的误区</h1>
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/纠正几个Linux的IO监控指标的误区/" itemprop="url">纠正几个Linux的IO监控指标的误区</a></h1>
         
 
         <div class="post-meta">
@@ -382,7 +384,9 @@
       
 
       
-        <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>本文主要面向初级工程师，假设你已经对的Linux性能监控工具有所了解，例如top、vmstat、mpstat、iostat等。</p>
+        
+          
+            <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>本文主要面向初级工程师，假设你已经对的Linux性能监控工具有所了解，例如top、vmstat、mpstat、iostat等。</p>
 <p>日常工作中，碰到IO性能问题是常有的事，本文主要探讨Linux下的IO监控里容易产生误区的点。</p>
 <p>这些误区，一方面是因为工程师想当然，不仔细看文档，不理解底层细节。另一方面是因为Linux内核和监控工具的发展，落后于存储设备硬件的发展，软硬件发展存在脱节，因此监控工具不能反映硬件的真实情况。</p>
 <p>纠正这些误区，对这些监控和背后原理理解越深刻，越能评估一个系统性能的真实情况，定位和解决问题也更容易。</p>
@@ -430,6 +434,8 @@
 <p><a href="https://www.jianshu.com/p/13de0aea7c1e" target="_blank" rel="noopener">辩证看待 iostat</a></p>
 <p><a href="https://github.com/zhishutech/tech-blog-en2zh/blob/master/mysql/1-zh-Looking%20at%20Disk%20Utilization%20and%20Saturation.md" target="_blank" rel="noopener">深入理解磁盘IO利用率及饱和度</a></p>
 
+          
+        
       
     </div>
     
@@ -444,38 +450,14 @@
 
     <footer class="post-footer">
       
-        <div class="post-tags">
-          
-            <a href="/tags/性能监控/" rel="tag"># 性能监控</a>
-          
-            <a href="/tags/IO/" rel="tag"># IO</a>
-          
-        </div>
+
+      
+
       
 
       
       
-      
-
-      
-        <div class="post-nav">
-          <div class="post-nav-next post-nav-item">
-            
-          </div>
-
-          <span class="post-nav-divider"></span>
-
-          <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2019/03/使用wireguard打通内网机器和外网云服务器/" rel="prev" title="使用wireguard打通内网机器和外网云服务器">
-                使用wireguard打通内网机器和外网云服务器 <i class="fa fa-chevron-right"></i>
-              </a>
-            
-          </div>
-        </div>
-      
-
-      
+        <div class="post-eof"></div>
       
     </footer>
   </div>
@@ -485,11 +467,14 @@
   </article>
 
 
+    
+  </section>
 
-    <div class="post-spread">
-      
-    </div>
-  </div>
+  
+  <nav class="pagination">
+    <a class="extend prev" rel="prev" href="/page/2/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span>
+  </nav>
+
 
 
           </div>
@@ -497,14 +482,6 @@
 
 
           
-
-  
-    <div id="gitalk-container">
-    </div>
-
-  
-
-
 
 
         </div>
@@ -526,17 +503,8 @@
       
 
       
-        <ul class="sidebar-nav motion-element">
-          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
-            文章目录
-          </li>
-          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
-            站点概览
-          </li>
-        </ul>
-      
 
-      <section class="site-overview-wrap sidebar-panel">
+      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
@@ -612,22 +580,6 @@
         </div>
       </section>
 
-      
-      <!--noindex-->
-        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
-          <div class="post-toc">
-
-            
-              
-            
-
-            
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#环境"><span class="nav-number">2.</span> <span class="nav-text">环境</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#正文"><span class="nav-number">3.</span> <span class="nav-text">正文</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#iowait"><span class="nav-number">4.</span> <span class="nav-text">%iowait</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#解释"><span class="nav-number">4.1.</span> <span class="nav-text">解释</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#误区（1）-iowait高，CPU很忙。"><span class="nav-number">4.2.</span> <span class="nav-text">误区（1）%iowait高，CPU很忙。</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#实验验证"><span class="nav-number">4.3.</span> <span class="nav-text">实验验证</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#误区（2）-iowait高，磁盘IO瓶颈。"><span class="nav-number">4.4.</span> <span class="nav-text">误区（2）%iowait高，磁盘IO瓶颈。</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#实验验证-1"><span class="nav-number">4.5.</span> <span class="nav-text">实验验证</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#await"><span class="nav-number">5.</span> <span class="nav-text">await</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#解释-1"><span class="nav-number">5.1.</span> <span class="nav-text">解释</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#误区（1）混淆-iowait和await。"><span class="nav-number">5.2.</span> <span class="nav-text">误区（1）混淆%iowait和await。</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#误区（2）认为await高等于磁盘慢。"><span class="nav-number">5.3.</span> <span class="nav-text">误区（2）认为await高等于磁盘慢。</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#实验验证-2"><span class="nav-number">5.4.</span> <span class="nav-text">实验验证</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#util"><span class="nav-number">6.</span> <span class="nav-text">%util</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#解释-2"><span class="nav-number">6.1.</span> <span class="nav-text">解释</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#实验验证-3"><span class="nav-number">6.2.</span> <span class="nav-text">实验验证</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#svctm"><span class="nav-number">7.</span> <span class="nav-text">svctm</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#解释-3"><span class="nav-number">7.1.</span> <span class="nav-text">解释</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#实验验证-4"><span class="nav-number">7.2.</span> <span class="nav-text">实验验证</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#总结"><span class="nav-number">8.</span> <span class="nav-text">总结</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#参考资料"><span class="nav-number">9.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
-            
-
-          </div>
-        </section>
-      <!--/noindex-->
       
 
       
@@ -762,10 +714,6 @@
 
 
   
-  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
-<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
-
-
 
   
 
@@ -806,22 +754,6 @@
 
 
 
-
-  <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
-  <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
-  <script src="https://cdn.bootcss.com/blueimp-md5/2.10.0/js/md5.min.js"></script>
-   <script type="text/javascript">
-        var gitalk = new Gitalk({
-          clientID: 'd238ee13d183adcedd5f',
-          clientSecret: '2cf9d6d756f82d8d22bcca81a76d27f310b6c2ae',
-          repo: 'zw1m.github.io',
-          owner: 'zw1m',
-          admin: ['zw1m'],
-          id: md5(window.location.pathname),
-          distractionFreeMode: 'true'
-        })
-        gitalk.render('gitalk-container')
-       </script>
 
 
 

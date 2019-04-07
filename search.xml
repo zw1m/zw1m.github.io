@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title><![CDATA[全链路分析数据落盘机制-文件系统层及块设备层]]></title>
+    <url>%2F2019%2F04%2F%E5%85%A8%E9%93%BE%E8%B7%AF%E5%88%86%E6%9E%90%E6%95%B0%E6%8D%AE%E8%90%BD%E7%9B%98%E6%9C%BA%E5%88%B6-%E6%96%87%E4%BB%B6%E7%B3%BB%E7%BB%9F%E5%B1%82%E5%8F%8A%E5%9D%97%E8%AE%BE%E5%A4%87%E5%B1%82%2F</url>
+    <content type="text"><![CDATA[前言本文从文件系统和块设备层介绍Linux内核关于数据落盘的机制。 总结之前的内容sync、fsync、fdatasync 和 fflush fopen(3)属于C标准库的函数，以数据流（stream）方式打开文件，fwrite(3)是写入应用层缓冲（glibc实现），不保证落盘，但有一个叫fflush(3)的函数好像有用？实际上fflush也属于C标准库，它仅仅是把应用层缓冲写入内核缓冲（pagecache），所以fflush和数据落盘也不沾边。 sync(2)、fsync(2)、fdatasync(2)属于系统调用，应用程序调用时，内核会把内核缓冲（pagecache）数据写入磁盘。 open属于系统调用，以文件描述符打开文件，使用O_DIRECT标志位来禁用pagecache。使用O_SYNC，O_DSYNC来达到每次write都实现fsync和fdatasync的效果，否则fsync和fdatasync只能作用一次。 fsync(2)、fdatasync(2)的区别仅仅是，fdatasync不保证文件系统元数据落盘，性能更好，但有安全风险。 这张图表明了这些层次关系，Summary of IO buffering：]]></content>
+      <categories>
+        <category>体系结构</category>
+      </categories>
+      <tags>
+        <tag>IO</tag>
+        <tag>刷盘</tag>
+      </tags>
+  </entry>
+  <entry>
     <title><![CDATA[全链路分析数据落盘机制-基础知识及应用层]]></title>
     <url>%2F2019%2F04%2F%E5%85%A8%E9%93%BE%E8%B7%AF%E5%88%86%E6%9E%90%E6%95%B0%E6%8D%AE%E8%90%BD%E7%9B%98%E6%9C%BA%E5%88%B6-%E5%9F%BA%E7%A1%80%E7%9F%A5%E8%AF%86%E5%8F%8A%E5%BA%94%E7%94%A8%E5%B1%82%2F</url>
     <content type="text"><![CDATA[前言本文介绍一些Linux系统基础知识，用于更好地理解内核和IO链路。此外，本文也介绍一些应用层来保障数据落盘的机制，例如fsync，fdatasync等。 库函数和系统调用介绍 库函数是为了方便人们编写应用程序。库函数（library function），是由用户或组织自己开发的，具有一定功能的函数集合，一般具有较好平台移植性，通过库文件（静态库或动态库）向程序员提供功能性调用。程序员无需关心平台差异，由库来屏蔽平台差异性。 系统调用是为了方便应用使用操作系统的接口。系统调用（system call），指运行在用户空间的应用程序向操作系统内核请求某些服务的调用过程。 系统调用提供了用户程序与操作系统之间的接口。一般来说，系统调用都在内核态执行。由于系统调用不考虑平台差异性，由内核直接提供，因而移植性较差（几乎无移植性）。 常见库函数printf，scanf，fopen，fclose，fgetc，fgets，fprintf，fsacnf，fputc，calloc，free，malloc，realloc，strcat，strchr，strcmp，strcpy，strlen，strstr等，需要包含stdio.h，string.h，alloc.h，stdlib.h等头文件。 常见系统调用open, close, read, write, ioctl，fork，clone，exit，getpid，access，chdir，chmod，stat，brk，mmap等，需要包含unistd.h等头文件。 区别 所有 C 函数库是相同的，而各个操作系统的系统调用是不同的。 函数库调用是调用函数库中的一个程序，而系统调用是调用系统内核的服务。 函数库调用是与用户程序相联系，而系统调用是操作系统的一个进入点 函数库调用是在用户地址空间执行，而系统调用是在内核地址空间执行 函数库调用的运行时间属于「用户」时间，而系统调用的运行时间属于「系统」时间 函数库调用属于过程调用，开销较小，而系统调用需要切换到内核上下文环境然后切换回来，开销较大 在C函数库libc中大约 300 个程序，在 UNIX 中大约有 90 个系统调用 函数库典型的 C 函数：system, fprintf, malloc，而典型的系统调用：chdir, fork, write, brk 查询系统调用属于man的第二部分，库函数属于man的第三部分。1234man man2 System calls (functions provided by the kernel)3 Library calls (functions within program libraries)man 2 open 库函数：man 3 fopen 系统调用：man 2 open 以c语言库函数举例，glibc库函数头文件属于glibc-headers包：1234[root@MiWiFi-R1CM-srv ~]# rpm -qf /usr/include/stdio.h glibc-headers-2.17-260.el7_6.3.x86_64[root@MiWiFi-R1CM-srv ~]# rpm -qf /usr/include/unistd.hglibc-headers-2.17-260.el7_6.3.x86_64 系统调用头文件属于kernel-headers包：12[root@MiWiFi-R1CM-srv ~]# rpm -qf /usr/include/asm/unistd_64.h kernel-headers-3.10.0-957.5.1.el7.x86_64 对应跟踪工具，ltrace和strace12ltrace - A library call tracerstrace - trace system calls and signals 应用层的刷盘pythonpython3.3以上使用os.sync。1234os.sync()Force write of everything to disk.Availability: Unix.New in version 3.3. python2需要引用外部。1234&gt;&gt;&gt; import ctypes&gt;&gt;&gt; libc = ctypes.CDLL("libc.so.6")&gt;&gt;&gt; libc.sync()0 JavaJDK中有三种方式可以强制文件数据落盘： 调用 FileDescriptor#sync函数 12调用IO_Sync来执行数据同步IO_Sync在UNIX系统上的定义就是 fsync 调用 FileChannel#force函数 12FileChannel#force 调用 FileDispatcher#force通过 metaData 参数来区分调用 fsync 和 fdatasync 使用 RandomAccessFile 以 rws 或者 rwd 模式打开文件 1234“rws” 还要求对文件的内容或元数据的每个更新都同步写入到底层存储设备。“rwd” 还要求对文件内容的每个更新都同步写入到底层存储设备。rws 模式会在 open 文件时传入 O_SYNC 标志位。 rwd 模式会在 open 文件时传入 O_DSYNC 标志位。 C语言 UNIX系统提供了三个系统调用来执行刷新内核缓冲区： sync ， fsync ， fdatasync 。 sync函数将所有修改过的块缓冲区落盘再返回。 fsync对指定文件生效，传输内核缓冲区中这个文件的数据落盘再返回。包含数据与文件系统元数据。 fdatasync仅刷新数据，不刷新文件系统元数据。 除了上面三个系统调用， open 系统调用在打开文件时，可以设置和同步相关的标志位： O_SYNC 和 O_DSYNC 。 设置 O_SYNC 的效果相当于是每次 write 后自动调用 fsync 。 设置 O_DSYNC 的效果相当于是每次 write 后自动调用 fdatasync 。 总结：从Python和Java可以看出来，这些高级语言，为了保证数据落盘，绕来绕去都回到C语言库的fsync和fdatasync。接下来的文章，我们在文件系统层和块设备层进一步分析。]]></content>
@@ -70,8 +82,8 @@
         <category>性能分析</category>
       </categories>
       <tags>
-        <tag>IO</tag>
         <tag>性能监控</tag>
+        <tag>IO</tag>
       </tags>
   </entry>
 </search>
