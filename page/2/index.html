@@ -293,6 +293,256 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/04/Linux性能优化实战笔记-CPU篇/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Roger K">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="运维深处">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/04/Linux性能优化实战笔记-CPU篇/" itemprop="url">Linux性能优化实战笔记-CPU篇</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-04-04T12:23:42+08:00">
+                2019-04-04
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/性能分析/" itemprop="url" rel="index">
+                    <span itemprop="name">性能分析</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>2013年，我因为工作需要开始进入Linux性能分析、优化及Debug领域。</p>
+<p>2019年，恰逢《极客时间》的APP有了《Linux性能优化实战》课程，我也参与订阅学习，这篇文章便是学习笔记。这个课程非常不错，链接如下：<a href="https://time.geekbang.org/column/intro/140" target="_blank" rel="noopener">https://time.geekbang.org/column/intro/140</a></p>
+<p>当然，在这个领域，Netflix的Brendan D. Gregg大神的博客和PPT仍然是最优秀的学习材料，我在后面也会分享关于他的学习笔记。</p>
+<h3 id="CPU基础"><a href="#CPU基础" class="headerlink" title="CPU基础"></a>CPU基础</h3><ol>
+<li>CPU 其实也不是单纯的一块，它包括三个部分，运算单元、数据单元和控制单元。</li>
+<li>运算单元只管算，例如做加法、做位移等等。但是，它不知道应该算哪些数据，运算结果应该放在哪里。</li>
+<li>数据单元包括 CPU 内部的缓存和寄存器组，空间很小，但是速度飞快，可以暂时存放数据和运算结果。</li>
+<li>控制单元是一个统一的指挥中心，它可以获得下一条指令，然后执行这条指令。这个指令会指导运算单元取出数据单元中的某几个数据，计算出个结果，然后放在数据单元的某个地方。</li>
+</ol>
+<h3 id="第一周-00-08"><a href="#第一周-00-08" class="headerlink" title="第一周 00-08"></a>第一周 00-08</h3><p>1 性能分析，其实就是找出应用或系统的瓶颈，并设法去避免或者缓解它们，从而更高效地利用系统资源处理更多的请求。这包含了一系列的步骤，比如下面这六个步骤。</p>
+<ul>
+<li>选择指标评估应用程序和系统的性能；</li>
+<li>为应用程序和系统设置性能目标；</li>
+<li>进行性能基准测试；</li>
+<li>性能分析定位瓶颈；</li>
+<li>优化系统和应用程序；</li>
+<li>性能监控和告警。</li>
+</ul>
+<p>2 平均负载是指单位时间内，系统处于可运行状态和不可中断状态的平均进程数，也就是平均活跃进程数，它和CPU使用率并没有直接关系。</p>
+<ul>
+<li>所谓可运行状态的进程，是指正在使用CPU或者正在等待CPU的进程，也就是我们常用ps命令看到的，处于R状态（Running或Runnable）的进程。</li>
+<li>不可中断状态的进程则是正处于内核态关键流程中的进程，并且这些流程是不可打断的，比如最常见的是等待硬件设备的IO响应，也就是我们在ps命令中看到的D状态（UninterruptibleSleep，也称为DiskSleep）的进程。</li>
+<li>比如，当一个进程向磁盘读写数据时，为了保证数据的一致性，在得到磁盘回复前，它是不能被其他进程或者中断打断的，这个时候的进程就处于不可中断状态。如果此时的进程被打断了，就容易出现磁盘数据与进程数据不一致的问题。所以，不可中断状态实际上是系统对进程和硬件设备的一种保护机制。</li>
+<li>平均负载高有可能是CPU密集型进程导致的；</li>
+<li>平均负载高并不一定代表CPU使用率高，还有可能是IO更繁忙了；</li>
+<li>当发现负载高的时候，你可以使用mpstat、pidstat等工具，辅助分析负载的来源。</li>
+</ul>
+<p>3 Linux 是一个多任务操作系统，它支持远大于 CPU 数量的任务同时运行。当然，这些任务实际上并不是真的在同时运行，而是因为系统在很短的时间内，将 CPU 轮流分配给它们，造成多任务同时运行的错觉。 而在每个任务运行前，CPU 都需要知道任务从哪里加载、又从哪里开始运行，也就是说，需要系统事先帮它设置好 CPU 寄存器和程序计数器（Program Counter，PC）。 CPU 寄存器，是 CPU 内置的容量小、但速度极快的内存。而程序计数器，则是用来存储 CPU 正在执行的指令位置、或者即将执行的下一条指令位置。它们都是 CPU 在运行任何任务前，必须的依赖环境，因此也被叫做 CPU 上下文。</p>
+<p>4 CPU和寄存器资料：<a href="https://software.intel.com/en-us/articles/intel-sdm" target="_blank" rel="noopener">Intel® 64 and IA-32 Architectures Software Developer Manuals</a></p>
+<p>5 CPU 上下文切换，就是先把前一个任务的 CPU 上下文（也就是 CPU 寄存器和程序计数器）保存起来，然后加载新任务的上下文到这些寄存器和程序计数器，最后再跳转到程序计数器所指的新位置，运行新任务。 而这些保存下来的上下文，会存储在系统内核中，并在任务重新调度执行时再次加载进来。这样就能保证任务原来的状态不受影响，让任务看起来还是连续运行。</p>
+<p>6 操作系统管理的任务可以分为进程、线程、硬件中断。所以，根据任务的不同，CPU的上下文切换就可以分为几个不同的场景，也就是进程上下文切换、线程上下文切换以及中断上下文切换。</p>
+<p>7 进程上下文切换，Linux按照特权级别，分为内核空间和用户空间，对应CPU的Ring0和Ring3，参考<a href="https://time.geekbang.org/column/article/69859" target="_blank" rel="noopener">Protection ring</a></p>
+<ul>
+<li>内核空间（Ring 0）具有最高权限，可以直接访问所有资源；</li>
+<li>用户空间（Ring 3）只能访问受限资源，不能直接访问内存等硬件设备，必须通过系统调用陷入到内核中，才能访问这些特权资源。</li>
+</ul>
+<p>8 也就是说，进程既可以在用户空间运行，又可以在内核空间中运行。进程在用户空间运行时，被称为进程的用户态，而陷入内核空间的时候，被称为进程的内核态。 从用户态到内核态的转变，需要通过系统调用来完成。比如，当我们查看文件内容时，就需要多次系统调用来完成：首先调用 open() 打开文件，然后调用 read() 读取文件内容，并调用 write() 将内容写到标准输出，最后再调用 close() 关闭文件。</p>
+<p>9 系统调用的过程发生上下文切换，CPU 寄存器里原来用户态的指令位置，需要先保存起来。接着，为了执行内核态代码，CPU 寄存器需要更新为内核态指令的新位置。最后才是跳转到内核态运行内核任务。 而系统调用结束后，CPU 寄存器需要恢复原来保存的用户态，然后再切换到用户空间，继续运行进程。所以，一次系统调用的过程，其实是发生了两次 CPU 上下文切换。 </p>
+<p>不过，需要注意的是，系统调用过程中，并不会涉及到虚拟内存等进程用户态的资源，也不会切换进程。这跟我们通常所说的进程上下文切换是不一样的：</p>
+<ul>
+<li>进程上下文切换，是指从一个进程切换到另一个进程运行。</li>
+<li>而系统调用过程中一直是同一个进程在运行。 </li>
+</ul>
+<p>所以，系统调用过程通常称为特权模式切换，而不是上下文切换。但实际上，系统调用过程中，CPU 的上下文切换还是无法避免的。</p>
+<p>10 进程上下文切换跟系统调用区别：</p>
+<p>进程是由内核来管理和调度的，进程的切换只能发生在内核态。所以，进程的上下文不仅包括了虚拟内存、栈、全局变量等用户空间的资源，还包括了内核堆栈、寄存器等内核空间的状态。 </p>
+<p>因此，进程的上下文切换就比系统调用时多了一步：在保存当前进程的内核状态和 CPU 寄存器之前，需要先把该进程的虚拟内存、栈等保存下来；而加载了下一进程的内核态后，还需要刷新进程的虚拟内存和用户栈。</p>
+<p>在进程上下文切换次数较多的情况下，很容易导致 CPU 将大量时间耗费在寄存器、内核栈以及虚拟内存等资源的保存和恢复上，进而大大缩短了真正运行进程的时间。</p>
+<p>另外，Linux 通过 TLB（Translation Lookaside Buffer）来管理虚拟内存到物理内存的映射关系。当虚拟内存更新后，TLB 也需要刷新，内存的访问也会随之变慢。特别是在多处理器系统上，缓存是被多个处理器共享的，刷新缓存不仅会影响当前处理器的进程，还会影响共享缓存的其他处理器的进程。</p>
+<p>11 什么时候会切换进程上下文？ 进程切换时才需要切换上下文，换句话说，只有在进程调度的时候，才需要切换上下文。Linux 为每个 CPU 都维护了一个就绪队列，将活跃进程（即正在运行和正在等待 CPU 的进程）按照优先级和等待 CPU 的时间排序，然后选择最需要 CPU 的进程，也就是优先级最高和等待 CPU 时间最长的进程来运行。</p>
+<p>12 发生进程调度的场景，他们就是出现上下文切换性能问题的原因。</p>
+<ul>
+<li>其一，为了保证所有进程可以得到公平调度，CPU 时间被划分为一段段的时间片，这些时间片再被轮流分配给各个进程。这样，当某个进程的时间片耗尽了，就会被系统挂起，切换到其它正在等待 CPU 的进程运行。 </li>
+<li>其二，进程在系统资源不足（比如内存不足）时，要等到资源满足后才可以运行，这个时候进程也会被挂起，并由系统调度其他进程运行。</li>
+<li>其三，当进程通过睡眠函数 sleep 这样的方法将自己主动挂起时，自然也会重新调度。 </li>
+<li>其四，当有优先级更高的进程运行时，为了保证高优先级进程的运行，当前进程会被挂起，由高优先级进程来运行。 </li>
+<li>最后一个，发生硬件中断时，CPU 上的进程会被中断挂起，转而执行内核中的中断服务程序。</li>
+</ul>
+<p>13 查看进程被切换的情况，主动切换次数和被动切换次数。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# cat /proc/5800/status | grep switches</span><br><span class="line">voluntary_ctxt_switches:	239</span><br><span class="line">nonvoluntary_ctxt_switches:	70</span><br></pre></td></tr></table></figure></p>
+<p>14 线程上下文切换<br>线程与进程最大的区别在于，线程是调度的基本单位，而进程则是资源拥有的基本单位。说白了，所谓内核中的任务调度，实际上的调度对象是线程；而进程只是给线程提供了虚拟内存、全局变量等资源。<br>线程的上下文切换其实就可以分为两种情况： </p>
+<ul>
+<li>第一种，前后两个线程属于不同进程。此时，因为资源不共享，所以切换过程就跟进程上下文切换是一样。 </li>
+<li>第二种，前后两个线程属于同一个进程。此时，因为虚拟内存是共享的，所以在切换时，虚拟内存这些资源就保持不动，只需要切换线程的私有数据、寄存器等不共享的数据。</li>
+</ul>
+<p>15 中断的上下文切换<br>为了快速响应硬件的事件，中断处理会打断进程的正常调度和执行，转而调用中断处理程序，响应设备事件。而在打断其他进程时，就需要将进程当前的状态保存下来，这样在中断结束后，进程仍然可以从原来的状态恢复运行。 </p>
+<p>跟进程上下文不同，中断上下文切换并不涉及到进程的用户态。所以，即便中断过程打断了一个正处在用户态的进程，也不需要保存和恢复这个进程的虚拟内存、全局变量等用户态资源。中断上下文，其实只包括内核态中断服务程序执行所必需的状态，包括 CPU 寄存器、内核堆栈、硬件中断参数等。 </p>
+<p>对同一个 CPU 来说，中断处理比进程拥有更高的优先级，所以中断上下文切换并不会与进程上下文切换同时发生。同样道理，由于中断会打断正常进程的调度和执行，所以大部分中断处理程序都短小精悍，以便尽可能快的执行结束。 </p>
+<p>15 用systemtap跟踪中断，这里操作磁盘一次，通过/proc/interrupts和lspci，可以知道中断号123是南桥PCH（dd操作），129是网卡（ssh数据）。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# stap -e &apos;global irq;  probe kernel.trace(&quot;irq_handler_entry&quot;) &#123;irq[$irq]&lt;&lt;&lt;1&#125;&apos; -c &apos;dd if=/dev/zero of=/dev/sdc count=1 bs=4k oflag=direct&apos;</span><br><span class="line">记录了1+0 的读入</span><br><span class="line">记录了1+0 的写出</span><br><span class="line">4096字节(4.1 kB)已复制，0.000219332 秒，18.7 MB/秒</span><br><span class="line">irq[123] @count=29 @min=1 @max=1 @sum=29 @avg=1</span><br><span class="line">irq[129] @count=1 @min=1 @max=1 @sum=1 @avg=1</span><br></pre></td></tr></table></figure></p>
+<p>16 除了vmstat以外，用pidstat看每个进程的上下文切换情况<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"># 每隔 5 秒输出 1 组数据</span><br><span class="line">$ pidstat -w 5</span><br><span class="line">Linux 4.15.0 (ubuntu)  09/23/18  _x86_64_  (2 CPU)</span><br><span class="line"></span><br><span class="line">08:18:26      UID       PID   cswch/s nvcswch/s  Command</span><br><span class="line">08:18:31        0         1      0.20      0.00  systemd</span><br><span class="line">08:18:31        0         8      5.40      0.00  rcu_sched</span><br><span class="line">...</span><br></pre></td></tr></table></figure></p>
+<p>17 一个是 cswch ，表示每秒自愿上下文切换（voluntary context switches）的次数，另一个则是 nvcswch ，表示每秒非自愿上下文切换（non voluntary context switches）的次数。</p>
+<p>所谓自愿上下文切换，是指进程无法获取所需资源，导致的上下文切换。比如说， I/O、内存等系统资源不足时，就会发生自愿上下文切换。 </p>
+<p>而非自愿上下文切换，则是指进程由于时间片已到等原因，被系统强制调度，进而发生的上下文切换。比如说，大量进程都在争抢 CPU 时，就容易发生非自愿上下文切换。</p>
+<p>18 pidstat 默认显示进程的指标数据，加上 -t 参数后，才会输出线程的指标。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"># 每隔 1 秒输出一组数据（需要 Ctrl+C 才结束）</span><br><span class="line"># -wt 参数表示输出线程的上下文切换指标</span><br><span class="line">$ pidstat -wt 1</span><br><span class="line">08:14:05      UID      TGID       TID   cswch/s nvcswch/s  Command</span><br><span class="line">...</span><br><span class="line">08:14:05        0     10551         -      6.00      0.00  sysbench</span><br><span class="line">08:14:05        0         -     10551      6.00      0.00  |__sysbench</span><br><span class="line">08:14:05        0         -     10552  18911.00 103740.00  |__sysbench</span><br><span class="line">08:14:05        0         -     10553  18915.00 100955.00  |__sysbench</span><br><span class="line">08:14:05        0         -     10554  18827.00 103954.00  |__sysbench</span><br><span class="line">...</span><br></pre></td></tr></table></figure></p>
+<p>19 当超过cpu处理能力时，会造成中断升高，这是因为过多任务的调度问题。<br>使用watch命令，变化速度最快的是重调度中断（RES），这个中断类型表示，唤醒空闲状态的 CPU 来调度新的任务运行。这是多处理器系统（SMP）中，调度器用来分散任务到不同 CPU 的机制，通常也被称为处理器间中断（Inter-Processor Interrupts，IPI）。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"># -d 参数表示高亮显示变化的区域</span><br><span class="line">$ watch -d cat /proc/interrupts</span><br><span class="line">           CPU0       CPU1</span><br><span class="line">...</span><br><span class="line">RES:    2450431    5279697   Rescheduling interrupts</span><br><span class="line">...</span><br></pre></td></tr></table></figure></p>
+<p>20 每秒上下文切换多少次才算正常呢？ 这个数值其实取决于系统本身的 CPU 性能。在我看来，如果系统的上下文切换次数比较稳定，那么从数百到一万以内，都应该算是正常的。<br>但当上下文切换次数超过一万次，或者切换次数出现数量级的增长时，就很可能已经出现了性能问题。 这时，你还需要根据上下文切换的类型，再做具体分析。比方说： </p>
+<ul>
+<li>自愿上下文切换变多了，说明进程都在等待资源，有可能发生了 I/O 等其他问题； </li>
+<li>非自愿上下文切换变多了，说明进程都在被强制调度，也就是都在争抢 CPU，说明 CPU 的确成了瓶颈； </li>
+<li>中断次数变多了，说明 CPU 被中断处理程序占用，还需要通过查看 /proc/interrupts 文件来分析具体的中断类型。</li>
+</ul>
+<p>21 Linux 作为一个多任务操作系统，将每个 CPU 的时间划分为很短的时间片，再通过调度器轮流分配给各个任务使用，因此造成多任务同时运行的错觉。<br>为了维护 CPU 时间，Linux 通过事先定义的节拍率（内核中表示为 HZ），触发时间中断，并使用全局变量 Jiffies 记录了开机以来的节拍数。每发生一次时间中断，Jiffies 的值就加 1。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# grep &apos;CONFIG_HZ=&apos; /boot/config-$(uname -r)</span><br><span class="line">CONFIG_HZ=1000</span><br></pre></td></tr></table></figure></p>
+<p>22 碰到常规问题无法解释的 CPU 使用率情况时，首先要想到有可能是短时应用导致的问题，比如有可能是下面这两种情况。</p>
+<ul>
+<li>第一，应用里直接调用了其他二进制程序，这些程序通常运行时间比较短，通过 top 等工具也不容易发现。 </li>
+<li>第二，应用本身在不停地崩溃重启，而启动过程的资源初始化，很可能会占用相当多的 CPU。 对于这类进程，我们可以用 pstree 或者 execsnoop 找到它们的父进程，再从父进程所在的应用入手，排查问题的根源。</li>
+</ul>
+<p>23 用我们最熟悉的 ps 或者 top ，可以查看进程的状态，这些状态包括运行（R）、空闲（I）、不可中断睡眠（D）、可中断睡眠（S）、僵尸（Z）以及暂停（T）等。 其中，不可中断状态和僵尸状态，是我们今天学习的重点。 </p>
+<ul>
+<li>不可中断状态，表示进程正在跟硬件交互，为了保护进程数据和硬件的一致性，系统不允许其他进程或中断打断这个进程。进程长时间处于不可中断状态，通常表示系统有 I/O 性能问题。 </li>
+<li>僵尸进程表示进程已经退出，但它的父进程还没有回收子进程占用的资源。短暂的僵尸状态我们通常不必理会，但进程长时间处于僵尸状态，就应该注意了，可能有应用程序没有正常处理子进程的退出。</li>
+</ul>
+<p>24 中断其实是一种异步的事件处理机制，可以提高系统的并发处理能力。 由于中断处理程序会打断其他进程的运行，所以，为了减少对正常进程运行调度的影响，中断处理程序就需要尽可能快地运行。如果中断本身要做的事情不多，那么处理起来也不会有太大问题；但如果中断要处理的事情很多，中断服务程序就有可能要运行很长时间。 特别是，中断处理程序在响应中断时，还会临时关闭中断。这就会导致上一次中断处理完成之前，其他中断都不能响应，也就是说中断有可能会丢失。</p>
+<p>25 为了解决中断处理程序执行过长和中断丢失的问题，Linux 将中断处理过程分成了两个阶段，也就是上半部和下半部： 上半部用来快速处理中断，它在中断禁止模式下运行，主要处理跟硬件紧密相关的或时间敏感的工作。 下半部用来延迟处理上半部未完成的工作，通常以内核线程的方式运行。</p>
+<p>26 中断上半部分和下半部分总结</p>
+<ul>
+<li>上半部直接处理硬件请求，也就是我们常说的硬中断，特点是快速执行； </li>
+<li>而下半部则是由内核触发，也就是我们常说的软中断，特点是延迟执行。</li>
+<li>/proc/softirqs 提供了软中断的运行情况； </li>
+<li>/proc/interrupts 提供了硬中断的运行情况。</li>
+</ul>
+<p>27 系统层面的 CPU 优化方法也有不少，列举了最常见的一些方法。 </p>
+<ul>
+<li>CPU 绑定：把进程绑定到一个或者多个 CPU 上，可以提高 CPU 缓存的命中率，减少跨 CPU 调度带来的上下文切换问题。 </li>
+<li>CPU 独占：跟 CPU 绑定类似，进一步将 CPU 分组，并通过 CPU 亲和性机制为其分配进程。这样，这些 CPU 就由指定的进程独占，换句话说，不允许其他进程再来使用这些 CPU。 </li>
+<li>优先级调整：使用 nice 调整进程的优先级，正值调低优先级，负值调高优先级。优先级的数值含义前面我们提到过，忘了的话及时复习一下。在这里，适当降低非核心应用的优先级，增高核心应用的优先级，可以确保核心应用得到优先处理。 </li>
+<li>为进程设置资源限制：使用 Linux cgroups 来设置进程的 CPU 使用上限，可以防止由于某个应用自身的问题，而耗尽系统资源。 </li>
+<li>NUMA（Non-Uniform Memory Access）优化：支持 NUMA 的处理器会被划分为多个 node，每个 node 都有自己的本地内存空间。NUMA 优化，其实就是让 CPU 尽可能只访问本地内存。 </li>
+<li>中断负载均衡：无论是软中断还是硬中断，它们的中断处理程序都可能会耗费大量的 CPU。开启 irqbalance 服务或者配置 smp_affinity，就可以把中断处理过程自动负载均衡到多个 CPU 上。</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/03/全链路分析数据落盘机制-跟踪sync命令/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -387,9 +637,9 @@
         
           
             <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>本文面向初学者，用sync这条命令来介绍刷盘经历了哪些过程，以及sync命令如何保证数据落盘。<br>本文可以了解一些跟踪系统调用的知识。</p>
-<h3 id="sync函数"><a href="#sync函数" class="headerlink" title="sync函数"></a>sync函数</h3><p>通过man sync可以看到，sync - flush file system buffers<br>Force changed blocks to disk, update the super block.<br>info命令还可以看到更多介绍：<br><figure class="highlight livecodeserver"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">info coreutils <span class="string">'sync invocation'</span></span><br><span class="line"></span><br><span class="line"><span class="string">'sync'</span> writes <span class="keyword">any</span> data buffered <span class="keyword">in</span> memory out <span class="built_in">to</span> disk.  This can <span class="built_in">include</span></span><br><span class="line">(but is <span class="keyword">not</span> limited <span class="built_in">to</span>) modified superblocks, modified inodes, <span class="keyword">and</span></span><br><span class="line">delayed reads <span class="keyword">and</span> writes.  This must be implemented <span class="keyword">by</span> <span class="keyword">the</span> kernel; The</span><br><span class="line"><span class="string">'sync'</span> program does nothing but exercise <span class="keyword">the</span> <span class="string">'sync'</span> <span class="keyword">system</span> call.</span><br><span class="line"></span><br><span class="line">   The kernel keeps data <span class="keyword">in</span> memory <span class="built_in">to</span> avoid doing (relatively slow) disk</span><br><span class="line">reads <span class="keyword">and</span> writes.  This improves performance, but <span class="keyword">if</span> <span class="keyword">the</span> computer</span><br><span class="line">crashes, data may be lost <span class="keyword">or</span> <span class="keyword">the</span> <span class="built_in">file</span> <span class="keyword">system</span> corrupted <span class="keyword">as</span> <span class="keyword">a</span> <span class="built_in">result</span>.  The</span><br><span class="line"><span class="string">'sync'</span> <span class="keyword">command</span> <span class="title">ensures</span> <span class="title">everything</span> <span class="title">in</span> <span class="title">memory</span> <span class="title">is</span> <span class="title">written</span> <span class="title">to</span> <span class="title">disk</span>.</span><br></pre></td></tr></table></figure></p>
-<p>sync命令属于coreutils这个rpm包，coreutils-8.22/src/sync.c。<br>打开源码，发现没有实际内容，只有最后的sync()函数有意义。<br>接下来查看sync()函数的说明，使用man 2 sync。<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">NAME</span><br><span class="line">sync, syncfs - <span class="keyword">commit</span> buffer <span class="keyword">cache</span> <span class="keyword">to</span> disk</span><br><span class="line"></span><br><span class="line"><span class="comment">#include &lt;unistd.h&gt;</span></span><br><span class="line"></span><br><span class="line">DESCRIPTION</span><br><span class="line">       <span class="keyword">sync</span>() causes <span class="keyword">all</span> buffered modifications <span class="keyword">to</span> <span class="keyword">file</span> metadata <span class="keyword">and</span> <span class="keyword">data</span> <span class="keyword">to</span> be written <span class="keyword">to</span> the underlying <span class="keyword">file</span> systems.</span><br></pre></td></tr></table></figure></p>
-<p>可以看到/usr/include/unistd.h，这个文件属于glibc，属于glibc-headers这个rpm包，<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* Make all changes done to all files actually appear on disk.  */</span></span><br><span class="line"><span class="function"><span class="keyword">extern</span> <span class="keyword">void</span> <span class="title">sync</span> <span class="params">(<span class="keyword">void</span>)</span> __THROW</span>;</span><br></pre></td></tr></table></figure></p>
+<h3 id="sync函数"><a href="#sync函数" class="headerlink" title="sync函数"></a>sync函数</h3><p>通过man sync可以看到，sync - flush file system buffers<br>Force changed blocks to disk, update the super block.<br>info命令还可以看到更多介绍：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">info coreutils &apos;sync invocation&apos;</span><br><span class="line"></span><br><span class="line">&apos;sync&apos; writes any data buffered in memory out to disk.  This can include</span><br><span class="line">(but is not limited to) modified superblocks, modified inodes, and</span><br><span class="line">delayed reads and writes.  This must be implemented by the kernel; The</span><br><span class="line">&apos;sync&apos; program does nothing but exercise the &apos;sync&apos; system call.</span><br><span class="line"></span><br><span class="line">   The kernel keeps data in memory to avoid doing (relatively slow) disk</span><br><span class="line">reads and writes.  This improves performance, but if the computer</span><br><span class="line">crashes, data may be lost or the file system corrupted as a result.  The</span><br><span class="line">&apos;sync&apos; command ensures everything in memory is written to disk.</span><br></pre></td></tr></table></figure></p>
+<p>sync命令属于coreutils这个rpm包，coreutils-8.22/src/sync.c。<br>打开源码，发现没有实际内容，只有最后的sync()函数有意义。<br>接下来查看sync()函数的说明，使用man 2 sync。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">NAME</span><br><span class="line">sync, syncfs - commit buffer cache to disk</span><br><span class="line"></span><br><span class="line">#include &lt;unistd.h&gt;</span><br><span class="line"></span><br><span class="line">DESCRIPTION</span><br><span class="line">       sync() causes all buffered modifications to file metadata and data to be written to the underlying file systems.</span><br></pre></td></tr></table></figure></p>
+<p>可以看到/usr/include/unistd.h，这个文件属于glibc，属于glibc-headers这个rpm包，<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/* Make all changes done to all files actually appear on disk.  */</span><br><span class="line">extern void sync (void) __THROW;</span><br></pre></td></tr></table></figure></p>
 <p>glibc的unistd.h里sync函数，是对sync系统调用的一个包装，因为刷盘是一个与内核强相关的底层操作，glibc作为标准C库，仅靠自身是无法实现这些功能的，要借助内核来实现。</p>
 <p>下面背景知识和概念需要了解：</p>
 <ul>
@@ -400,18 +650,18 @@
 <li>系统调用（system call）是指操作系统提供给程序调用的接口。</li>
 <li>glibc中的open,read,write,close,stat,mkdir等函数其实都是是系统调用，准确的讲是系统调用的封装函数。</li>
 </ul>
-<h3 id="sync系统调用"><a href="#sync系统调用" class="headerlink" title="sync系统调用"></a>sync系统调用</h3><p>接下来，我们需要从glibc的sync函数，分析到sync的系统调用。<br>内核的unistd.h头文件在/usr/include/linux/unistd.h，属于kernel-headers这个rpm包。<br>接着又指向/usr/include/asm/unistd.h，根据体系结构，指向unistd_64.h。<br>unistd_64.h 里面看到有__NR_sync的宏定义，162这个数字就是这个sync系统调用的编号。<br>在/usr/include/asm-generic/unistd.h里，指出了源文件和函数名sys_sync。<br><figure class="highlight sqf"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* fs/sync.c */</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> __NR_sync 81</span></span><br><span class="line"><span class="variable">__SYSCALL</span>(<span class="variable">__NR_sync</span>, sys_sync)</span><br></pre></td></tr></table></figure></p>
-<p>这里需要注意，在不同的体系结构里，系统调用号是不同的。<br>asm-generic/unistd.h里的sync系统调用编号是81，因为asm-generic这是一个通用的系统调用编号文件，在我们x86_64系统里不适用。我们需要参考asm/unistd_64.h里的编号，也就是162。可以使用gcc编译器命令来查看预定义的宏的调用，也指向asm/unistd_64.h。<br><figure class="highlight lsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv linux]# echo -n <span class="string">"#include &lt;sys/syscall.h&gt;"</span> | gcc -E -</span><br><span class="line"># <span class="number">1</span> <span class="string">"&lt;stdin&gt;"</span></span><br><span class="line"># <span class="number">1</span> <span class="string">"&lt;built-in&gt;"</span></span><br><span class="line"># <span class="number">1</span> <span class="string">"&lt;命令行&gt;"</span></span><br><span class="line"># <span class="number">1</span> <span class="string">"/usr/include/stdc-predef.h"</span> <span class="number">1</span> <span class="number">3</span> <span class="number">4</span></span><br><span class="line"># <span class="number">1</span> <span class="string">"&lt;命令行&gt;"</span> <span class="number">2</span></span><br><span class="line"># <span class="number">1</span> <span class="string">"&lt;stdin&gt;"</span></span><br><span class="line"># <span class="number">1</span> <span class="string">"/usr/include/sys/syscall.h"</span> <span class="number">1</span> <span class="number">3</span> <span class="number">4</span></span><br><span class="line"># <span class="number">24</span> <span class="string">"/usr/include/sys/syscall.h"</span> <span class="number">3</span> <span class="number">4</span></span><br><span class="line"># <span class="number">1</span> <span class="string">"/usr/include/asm/unistd.h"</span> <span class="number">1</span> <span class="number">3</span> <span class="number">4</span></span><br><span class="line"># <span class="number">12</span> <span class="string">"/usr/include/asm/unistd.h"</span> <span class="number">3</span> <span class="number">4</span></span><br><span class="line"># <span class="number">1</span> <span class="string">"/usr/include/asm/unistd_64.h"</span> <span class="number">1</span> <span class="number">3</span> <span class="number">4</span></span><br><span class="line"># <span class="number">13</span> <span class="string">"/usr/include/asm/unistd.h"</span> <span class="number">2</span> <span class="number">3</span> <span class="number">4</span></span><br><span class="line"># <span class="number">25</span> <span class="string">"/usr/include/sys/syscall.h"</span> <span class="number">2</span> <span class="number">3</span> <span class="number">4</span></span><br><span class="line">...</span><br><span class="line"># <span class="number">1</span> <span class="string">"/usr/include/bits/syscall.h"</span> <span class="number">1</span> <span class="number">3</span> <span class="number">4</span></span><br><span class="line"># <span class="number">32</span> <span class="string">"/usr/include/sys/syscall.h"</span> <span class="number">2</span> <span class="number">3</span> <span class="number">4</span></span><br><span class="line"># <span class="number">1</span> <span class="string">"&lt;stdin&gt;"</span> <span class="number">2</span></span><br></pre></td></tr></table></figure></p>
+<h3 id="sync系统调用"><a href="#sync系统调用" class="headerlink" title="sync系统调用"></a>sync系统调用</h3><p>接下来，我们需要从glibc的sync函数，分析到sync的系统调用。<br>内核的unistd.h头文件在/usr/include/linux/unistd.h，属于kernel-headers这个rpm包。<br>接着又指向/usr/include/asm/unistd.h，根据体系结构，指向unistd_64.h。<br>unistd_64.h 里面看到有__NR_sync的宏定义，162这个数字就是这个sync系统调用的编号。<br>在/usr/include/asm-generic/unistd.h里，指出了源文件和函数名sys_sync。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">/* fs/sync.c */</span><br><span class="line">#define __NR_sync 81</span><br><span class="line">__SYSCALL(__NR_sync, sys_sync)</span><br></pre></td></tr></table></figure></p>
+<p>这里需要注意，在不同的体系结构里，系统调用号是不同的。<br>asm-generic/unistd.h里的sync系统调用编号是81，因为asm-generic这是一个通用的系统调用编号文件，在我们x86_64系统里不适用。我们需要参考asm/unistd_64.h里的编号，也就是162。可以使用gcc编译器命令来查看预定义的宏的调用，也指向asm/unistd_64.h。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv linux]# echo -n &quot;#include &lt;sys/syscall.h&gt;&quot; | gcc -E -</span><br><span class="line"># 1 &quot;&lt;stdin&gt;&quot;</span><br><span class="line"># 1 &quot;&lt;built-in&gt;&quot;</span><br><span class="line"># 1 &quot;&lt;命令行&gt;&quot;</span><br><span class="line"># 1 &quot;/usr/include/stdc-predef.h&quot; 1 3 4</span><br><span class="line"># 1 &quot;&lt;命令行&gt;&quot; 2</span><br><span class="line"># 1 &quot;&lt;stdin&gt;&quot;</span><br><span class="line"># 1 &quot;/usr/include/sys/syscall.h&quot; 1 3 4</span><br><span class="line"># 24 &quot;/usr/include/sys/syscall.h&quot; 3 4</span><br><span class="line"># 1 &quot;/usr/include/asm/unistd.h&quot; 1 3 4</span><br><span class="line"># 12 &quot;/usr/include/asm/unistd.h&quot; 3 4</span><br><span class="line"># 1 &quot;/usr/include/asm/unistd_64.h&quot; 1 3 4</span><br><span class="line"># 13 &quot;/usr/include/asm/unistd.h&quot; 2 3 4</span><br><span class="line"># 25 &quot;/usr/include/sys/syscall.h&quot; 2 3 4</span><br><span class="line">...</span><br><span class="line"># 1 &quot;/usr/include/bits/syscall.h&quot; 1 3 4</span><br><span class="line"># 32 &quot;/usr/include/sys/syscall.h&quot; 2 3 4</span><br><span class="line"># 1 &quot;&lt;stdin&gt;&quot; 2</span><br></pre></td></tr></table></figure></p>
 <p>由此，可以知道fs/sync.c就是我们要找的源文件。<br>linux-3.10.0-957.5.1.el7.x86_64/fs/sync.c</p>
-<h3 id="fs-sync-c"><a href="#fs-sync-c" class="headerlink" title="fs/sync.c"></a>fs/sync.c</h3><p>这个文件包含sync相关的函数定义：High-level sync()-related operations<br>需要注意，这里无法直接找到sync函数定义，需要用宏定义展开SYSCALL_DEFINE0(sync)才能得到sys_sync函数。<br><figure class="highlight vbscript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">/*</span><br><span class="line"> * Sync everything. We start by waking flusher threads so that most of</span><br><span class="line"> * writeback runs <span class="keyword">on</span> all devices <span class="keyword">in</span> parallel. <span class="keyword">Then</span> we sync all inodes reliably</span><br><span class="line"> * which effectively also waits <span class="keyword">for</span> all flusher threads <span class="keyword">to</span> finish doing</span><br><span class="line"> * writeback. At this point all data <span class="keyword">is</span> <span class="keyword">on</span> disk so metadata should be stable</span><br><span class="line"> * <span class="keyword">and</span> we tell filesystems <span class="keyword">to</span> sync their metadata via -&gt;sync_fs() calls.</span><br><span class="line"> * Finally, we writeout all block devices because some filesystems (e.g. ext2)</span><br><span class="line"> * just write metadata (such as inodes <span class="keyword">or</span> bitmaps) <span class="keyword">to</span> block device page cache</span><br><span class="line"> * <span class="keyword">and</span> <span class="keyword">do</span> <span class="keyword">not</span> sync it <span class="keyword">on</span> their own <span class="keyword">in</span> -&gt;sync_fs().</span><br><span class="line"> */</span><br><span class="line">SYSCALL_DEFINE0(sync)</span><br><span class="line">&#123;</span><br><span class="line">        <span class="built_in">int</span> nowait = <span class="number">0</span>, wait = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">        wakeup_flusher_threads(<span class="number">0</span>, WB_REASON_SYNC);</span><br><span class="line">        iterate_supers(sync_inodes_one_sb, <span class="literal">NULL</span>);</span><br><span class="line">        iterate_supers(sync_fs_one_sb, &amp;nowait);</span><br><span class="line">        iterate_supers(sync_fs_one_sb, &amp;wait);</span><br><span class="line">        iterate_bdevs(fdatawrite_one_bdev, <span class="literal">NULL</span>);</span><br><span class="line">        iterate_bdevs(fdatawait_one_bdev, <span class="literal">NULL</span>);</span><br><span class="line">        <span class="keyword">if</span> (unlikely(laptop_mode))</span><br><span class="line">                laptop_sync_completion();</span><br><span class="line">        return <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>SYSCALL_DEFINE0这个宏在linux/syscalls.h里定义：<br><figure class="highlight clean"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">#define SYSCALL_DEFINE0(sname)                                  \</span><br><span class="line">        SYSCALL_METADATA(_##sname, <span class="number">0</span>);                          \</span><br><span class="line">        asmlinkage long sys_##sname(void)</span><br></pre></td></tr></table></figure></p>
-<p>所以SYSCALL_DEFINE0(sync)展开得到：<br><figure class="highlight lisp"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SYSCALL_METADATA(<span class="name">_sync</span>, <span class="number">0</span>)<span class="comment">;                          \</span></span><br><span class="line">asmlinkage long sys_sync(<span class="name">void</span>)</span><br></pre></td></tr></table></figure></p>
+<h3 id="fs-sync-c"><a href="#fs-sync-c" class="headerlink" title="fs/sync.c"></a>fs/sync.c</h3><p>这个文件包含sync相关的函数定义：High-level sync()-related operations<br>需要注意，这里无法直接找到sync函数定义，需要用宏定义展开SYSCALL_DEFINE0(sync)才能得到sys_sync函数。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">/*</span><br><span class="line"> * Sync everything. We start by waking flusher threads so that most of</span><br><span class="line"> * writeback runs on all devices in parallel. Then we sync all inodes reliably</span><br><span class="line"> * which effectively also waits for all flusher threads to finish doing</span><br><span class="line"> * writeback. At this point all data is on disk so metadata should be stable</span><br><span class="line"> * and we tell filesystems to sync their metadata via -&gt;sync_fs() calls.</span><br><span class="line"> * Finally, we writeout all block devices because some filesystems (e.g. ext2)</span><br><span class="line"> * just write metadata (such as inodes or bitmaps) to block device page cache</span><br><span class="line"> * and do not sync it on their own in -&gt;sync_fs().</span><br><span class="line"> */</span><br><span class="line">SYSCALL_DEFINE0(sync)</span><br><span class="line">&#123;</span><br><span class="line">        int nowait = 0, wait = 1;</span><br><span class="line"></span><br><span class="line">        wakeup_flusher_threads(0, WB_REASON_SYNC);</span><br><span class="line">        iterate_supers(sync_inodes_one_sb, NULL);</span><br><span class="line">        iterate_supers(sync_fs_one_sb, &amp;nowait);</span><br><span class="line">        iterate_supers(sync_fs_one_sb, &amp;wait);</span><br><span class="line">        iterate_bdevs(fdatawrite_one_bdev, NULL);</span><br><span class="line">        iterate_bdevs(fdatawait_one_bdev, NULL);</span><br><span class="line">        if (unlikely(laptop_mode))</span><br><span class="line">                laptop_sync_completion();</span><br><span class="line">        return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>SYSCALL_DEFINE0这个宏在linux/syscalls.h里定义：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">#define SYSCALL_DEFINE0(sname)                                  \</span><br><span class="line">        SYSCALL_METADATA(_##sname, 0);                          \</span><br><span class="line">        asmlinkage long sys_##sname(void)</span><br></pre></td></tr></table></figure></p>
+<p>所以SYSCALL_DEFINE0(sync)展开得到：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SYSCALL_METADATA(_sync, 0);                          \</span><br><span class="line">asmlinkage long sys_sync(void)</span><br></pre></td></tr></table></figure></p>
 <p>至此，我们就得到了sys_sync这个系统调用函数。</p>
 <h3 id="sys-sync以及相关实验"><a href="#sys-sync以及相关实验" class="headerlink" title="sys_sync以及相关实验"></a>sys_sync以及相关实验</h3><p>对于sys_sync这个系统调用函数，非常底层的代码我们不做分析了，内核水太深，我们这里用两个工具来测试。</p>
-<h4 id="ftrace跟踪调用过程"><a href="#ftrace跟踪调用过程" class="headerlink" title="ftrace跟踪调用过程"></a>ftrace跟踪调用过程</h4><p>我们可以用ftrace跟踪sync完整的调用过程。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]<span class="comment"># cat function.sh </span></span><br><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line">debugfs=/sys/kernel/debug</span><br><span class="line"><span class="built_in">echo</span> nop &gt; <span class="variable">$debugfs</span>/tracing/current_tracer</span><br><span class="line"><span class="built_in">echo</span> 0 &gt; <span class="variable">$debugfs</span>/tracing/tracing_on</span><br><span class="line"><span class="built_in">echo</span> $$ &gt; <span class="variable">$debugfs</span>/tracing/set_ftrace_pid</span><br><span class="line"><span class="built_in">echo</span> function_graph &gt; <span class="variable">$debugfs</span>/tracing/current_tracer</span><br><span class="line"><span class="comment">#replace test_proc_show by your function name</span></span><br><span class="line"><span class="built_in">echo</span> sys_sync &gt; <span class="variable">$debugfs</span>/tracing/set_graph_function</span><br><span class="line"><span class="built_in">echo</span> 1 &gt; <span class="variable">$debugfs</span>/tracing/tracing_on</span><br><span class="line"><span class="built_in">exec</span> <span class="string">"<span class="variable">$@</span>"</span></span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ~]<span class="comment"># sh function.sh sync</span></span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ~]<span class="comment"># cat /sys/kernel/debug/tracing/trace &gt; 1</span></span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ~]<span class="comment"># head 1</span></span><br><span class="line"><span class="comment"># tracer: function_graph</span></span><br><span class="line"><span class="comment">#</span></span><br><span class="line"><span class="comment"># CPU  DURATION                  FUNCTION CALLS</span></span><br><span class="line"><span class="comment"># |     |   |                     |   |   |   |</span></span><br><span class="line"> 5)               |  <span class="function"><span class="title">sys_sync</span></span>() &#123;</span><br><span class="line"> 5)               |    <span class="function"><span class="title">wakeup_flusher_threads</span></span>() &#123;</span><br><span class="line"> 5)               |      <span class="function"><span class="title">get_nr_dirty_pages</span></span>() &#123;</span><br><span class="line"> 5)               |        <span class="function"><span class="title">get_nr_dirty_inodes</span></span>() &#123;</span><br><span class="line"> 5)   0.163 us    |          get_nr_inodes();</span><br><span class="line"> 5)   0.608 us    |        &#125;</span><br><span class="line"> </span><br><span class="line">[root@MiWiFi-R1CM-srv ~]<span class="comment"># echo 0 &gt; /sys/kernel/debug/tracing/tracing_on</span></span><br></pre></td></tr></table></figure></p>
+<h4 id="ftrace跟踪调用过程"><a href="#ftrace跟踪调用过程" class="headerlink" title="ftrace跟踪调用过程"></a>ftrace跟踪调用过程</h4><p>我们可以用ftrace跟踪sync完整的调用过程。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# cat function.sh </span><br><span class="line">#!/bin/bash</span><br><span class="line">debugfs=/sys/kernel/debug</span><br><span class="line">echo nop &gt; $debugfs/tracing/current_tracer</span><br><span class="line">echo 0 &gt; $debugfs/tracing/tracing_on</span><br><span class="line">echo $$ &gt; $debugfs/tracing/set_ftrace_pid</span><br><span class="line">echo function_graph &gt; $debugfs/tracing/current_tracer</span><br><span class="line">#replace test_proc_show by your function name</span><br><span class="line">echo sys_sync &gt; $debugfs/tracing/set_graph_function</span><br><span class="line">echo 1 &gt; $debugfs/tracing/tracing_on</span><br><span class="line">exec &quot;$@&quot;</span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# sh function.sh sync</span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# cat /sys/kernel/debug/tracing/trace &gt; 1</span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# head 1</span><br><span class="line"># tracer: function_graph</span><br><span class="line">#</span><br><span class="line"># CPU  DURATION                  FUNCTION CALLS</span><br><span class="line"># |     |   |                     |   |   |   |</span><br><span class="line"> 5)               |  sys_sync() &#123;</span><br><span class="line"> 5)               |    wakeup_flusher_threads() &#123;</span><br><span class="line"> 5)               |      get_nr_dirty_pages() &#123;</span><br><span class="line"> 5)               |        get_nr_dirty_inodes() &#123;</span><br><span class="line"> 5)   0.163 us    |          get_nr_inodes();</span><br><span class="line"> 5)   0.608 us    |        &#125;</span><br><span class="line"> </span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# echo 0 &gt; /sys/kernel/debug/tracing/tracing_on</span><br></pre></td></tr></table></figure></p>
 <p>可以参考，还有vim配置用于展开ftrace文件：<a href="https://mp.weixin.qq.com/s?__biz=MzAwMDUwNDgxOA==&amp;mid=2652663542&amp;idx=1&amp;sn=1e19be71d650eba288b0341d09e164df&amp;chksm=810f286bb678a17d06b4659d00717517f3f65ab8a6452a33e799b6010b00814895647bc188d7&amp;scene=21#wechat_redirect" target="_blank" rel="noopener">宋宝华：关于Ftrace的一个完整案例</a></p>
-<h4 id="systemtap验证同步调用"><a href="#systemtap验证同步调用" class="headerlink" title="systemtap验证同步调用"></a>systemtap验证同步调用</h4><p>我们用systemtap来延长硬件刷盘底层函数时间，来验证上层的sync是一个同步阻塞调用。<br>从代码来看，sync_fs_one_sb, &amp;wait的确是一个同步调用。但是网上搜到的很多资料说sync是一个异步调用，不能保证数据落盘，还要多敲几次，多等待，这点非常存疑（搞笑，那sync命令有什么用？）。<br>使用systemtap来做实验，是比研读内核代码以外更快的验证方法。<br>根据上一篇文章，我们知道，当有刷盘的数据落盘时，一定会执行ata_scsi_flush_xlat这个函数，我们尝试把这个函数延长1秒：<br><figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# stap -g -v -e <span class="string">'probe module("libata").function("ata_scsi_flush_xlat").return &#123;mdelay(1000)&#125;'</span></span><br><span class="line">Pass <span class="number">1</span>: parsed user script and <span class="number">470</span> library scripts using <span class="number">244796</span>virt/<span class="number">42192</span>res/<span class="number">3488s</span>hr/<span class="number">38848d</span>ata kb, in <span class="number">210</span>usr/<span class="number">20s</span>ys/<span class="number">227</span><span class="built_in">real</span> ms.</span><br><span class="line">Pass <span class="number">2</span>: analyzed script: <span class="number">1</span> probe, <span class="number">1</span> function, <span class="number">1</span> embed, <span class="number">0</span> globals using <span class="number">246768</span>virt/<span class="number">45252</span>res/<span class="number">4428s</span>hr/<span class="number">40820d</span>ata kb, in <span class="number">30</span>usr/<span class="number">50s</span>ys/<span class="number">76</span><span class="built_in">real</span> ms.</span><br><span class="line">Pass <span class="number">3</span>: using cached /root/.systemtap/cache/<span class="number">0f</span>/stap_0f1684821eb395fa3d8126b925059598_1315.c</span><br><span class="line">Pass <span class="number">4</span>: using cached /root/.systemtap/cache/<span class="number">0f</span>/stap_0f1684821eb395fa3d8126b925059598_1315.ko</span><br><span class="line">Pass <span class="number">5</span>: starting run.</span><br></pre></td></tr></table></figure></p>
-<p>新开一个终端：可以看到，sync的时间明显变长，而且一直卡住直到结束。可以说明sync这是一个同步调用，会保证数据落盘再返回。<br><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# touch 2</span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# time sync</span><br><span class="line"></span><br><span class="line">real	0m2.007s</span><br><span class="line">user	0m0.334s</span><br><span class="line">sys	0m0.668s</span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# touch 3</span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# time sync</span><br><span class="line"></span><br><span class="line">real	0m1.961s</span><br><span class="line">user	0m0.000s</span><br><span class="line">sys	0m0.001s</span><br></pre></td></tr></table></figure></p>
+<h4 id="systemtap验证同步调用"><a href="#systemtap验证同步调用" class="headerlink" title="systemtap验证同步调用"></a>systemtap验证同步调用</h4><p>我们用systemtap来延长硬件刷盘底层函数时间，来验证上层的sync是一个同步阻塞调用。<br>从代码来看，sync_fs_one_sb, &amp;wait的确是一个同步调用。但是网上搜到的很多资料说sync是一个异步调用，不能保证数据落盘，还要多敲几次，多等待，这点非常存疑（搞笑，那sync命令有什么用？）。<br>使用systemtap来做实验，是比研读内核代码以外更快的验证方法。<br>根据上一篇文章，我们知道，当有刷盘的数据落盘时，一定会执行ata_scsi_flush_xlat这个函数，我们尝试把这个函数延长1秒：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# stap -g -v -e &apos;probe module(&quot;libata&quot;).function(&quot;ata_scsi_flush_xlat&quot;).return &#123;mdelay(1000)&#125;&apos;</span><br><span class="line">Pass 1: parsed user script and 470 library scripts using 244796virt/42192res/3488shr/38848data kb, in 210usr/20sys/227real ms.</span><br><span class="line">Pass 2: analyzed script: 1 probe, 1 function, 1 embed, 0 globals using 246768virt/45252res/4428shr/40820data kb, in 30usr/50sys/76real ms.</span><br><span class="line">Pass 3: using cached /root/.systemtap/cache/0f/stap_0f1684821eb395fa3d8126b925059598_1315.c</span><br><span class="line">Pass 4: using cached /root/.systemtap/cache/0f/stap_0f1684821eb395fa3d8126b925059598_1315.ko</span><br><span class="line">Pass 5: starting run.</span><br></pre></td></tr></table></figure></p>
+<p>新开一个终端：可以看到，sync的时间明显变长，而且一直卡住直到结束。可以说明sync这是一个同步调用，会保证数据落盘再返回。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# touch 2</span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# time sync</span><br><span class="line"></span><br><span class="line">real	0m2.007s</span><br><span class="line">user	0m0.334s</span><br><span class="line">sys	0m0.668s</span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# touch 3</span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# time sync</span><br><span class="line"></span><br><span class="line">real	0m1.961s</span><br><span class="line">user	0m0.000s</span><br><span class="line">sys	0m0.001s</span><br></pre></td></tr></table></figure></p>
 <h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><p>不详述所有参考，贴一些重要的：<br><a href="https://lwn.net/Articles/604287/" target="_blank" rel="noopener">Anatomy of a system call, part 1</a><br><a href="https://lwn.net/Articles/604515/" target="_blank" rel="noopener">Anatomy of a system call, part 1</a></p>
 
           
@@ -563,7 +813,7 @@
 <li>掉电保护和“刷盘”的关系是什么，是否就不用“刷盘”了？</li>
 <li>SCSI和ATA到底是什么关系，为什么我用的SATA盘识别成SCSI设备？</li>
 </ul>
-<h3 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h3><p>还是我的这台机器，sdb是SATA SSD，sdc是SATA HDD。它们连接在PCH（南桥），走AHCI控制器。<br><figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">Summary:</span>	ASRock Z370M-ITX<span class="regexp">/ac, 1 x Core i5-8400 2.80GHz, 15.2GB /</span> <span class="number">16</span>GB <span class="number">2400</span>MT/s DDR4</span><br><span class="line"><span class="string">System:</span>		ASRock Z370M-ITX/ac</span><br><span class="line"><span class="string">Processors:</span>	<span class="number">1</span> x Core i5<span class="number">-8400</span> <span class="number">2.80</span>GHz <span class="number">100</span>MHz FSB (<span class="number">6</span> cores)</span><br><span class="line"><span class="string">Memory:</span>		<span class="number">15.2</span>GB <span class="regexp">/ 16GB 2400MT/</span>s DDR4 == <span class="number">2</span> x <span class="number">8</span>GB</span><br><span class="line"><span class="string">Disk:</span>		sda (scsi0): <span class="number">240</span>GB (<span class="number">7</span>%) JBOD == <span class="number">1</span> x <span class="number">240</span>GB Gen3 signaling speed (<span class="number">6.0</span>Gb/s) LITEON-EGT<span class="number">-240</span>N9S</span><br><span class="line"><span class="string">Disk:</span>		<span class="string">sdb:</span> <span class="number">100</span>GB JBOD == <span class="number">1</span> x <span class="number">100</span>GB SATA <span class="number">300</span>MB/s INTEL-SSDSA2BZ100G3</span><br><span class="line"><span class="string">Disk:</span>		sdc (scsi2): <span class="number">1.0</span>TB JBOD == <span class="number">1</span> x <span class="number">1.0</span>TB Gen3 signaling speed (<span class="number">6.0</span>Gb/s) WDC-WD10JPLX<span class="number">-00</span>MBPT1</span><br><span class="line">Disk-<span class="string">Control:</span>	<span class="string">ahci0:</span> Intel <span class="number">200</span> Series PCH SATA controller [AHCI mode]</span><br><span class="line"><span class="string">Network:</span>	<span class="number">00</span>:<span class="number">1</span>f<span class="number">.6</span> (e1000e0): Intel Ethernet Connection (<span class="number">2</span>) I219-V</span><br><span class="line"><span class="string">Network:</span>	<span class="number">02</span>:<span class="number">00.0</span> (igb0): Intel I211 Gigabit</span><br><span class="line"><span class="string">Network:</span>	<span class="number">03</span>:<span class="number">00.0</span> (iwlwifi0): Intel Dual Band Wireless-AC <span class="number">3168</span>NGW [Stone Peak]</span><br><span class="line"><span class="string">OS:</span>		CentOS Linux <span class="number">7.6</span><span class="number">.1810</span> (Core) , Linux <span class="number">3.10</span><span class="number">.0</span><span class="number">-957.5</span><span class="number">.1</span>.el7.x86_64 x86_64, <span class="number">64</span>-bit</span><br><span class="line"><span class="string">BIOS:</span>		AMI P1<span class="number">.50</span> <span class="number">11</span><span class="regexp">/16/</span><span class="number">2017</span></span><br><span class="line"><span class="string">Hostname:</span>	MiWiFi-R1CM-srv</span><br></pre></td></tr></table></figure></p>
+<h3 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h3><p>还是我的这台机器，sdb是SATA SSD，sdc是SATA HDD。它们连接在PCH（南桥），走AHCI控制器。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">Summary:	ASRock Z370M-ITX/ac, 1 x Core i5-8400 2.80GHz, 15.2GB / 16GB 2400MT/s DDR4</span><br><span class="line">System:		ASRock Z370M-ITX/ac</span><br><span class="line">Processors:	1 x Core i5-8400 2.80GHz 100MHz FSB (6 cores)</span><br><span class="line">Memory:		15.2GB / 16GB 2400MT/s DDR4 == 2 x 8GB</span><br><span class="line">Disk:		sda (scsi0): 240GB (7%) JBOD == 1 x 240GB Gen3 signaling speed (6.0Gb/s) LITEON-EGT-240N9S</span><br><span class="line">Disk:		sdb: 100GB JBOD == 1 x 100GB SATA 300MB/s INTEL-SSDSA2BZ100G3</span><br><span class="line">Disk:		sdc (scsi2): 1.0TB JBOD == 1 x 1.0TB Gen3 signaling speed (6.0Gb/s) WDC-WD10JPLX-00MBPT1</span><br><span class="line">Disk-Control:	ahci0: Intel 200 Series PCH SATA controller [AHCI mode]</span><br><span class="line">Network:	00:1f.6 (e1000e0): Intel Ethernet Connection (2) I219-V</span><br><span class="line">Network:	02:00.0 (igb0): Intel I211 Gigabit</span><br><span class="line">Network:	03:00.0 (iwlwifi0): Intel Dual Band Wireless-AC 3168NGW [Stone Peak]</span><br><span class="line">OS:		CentOS Linux 7.6.1810 (Core) , Linux 3.10.0-957.5.1.el7.x86_64 x86_64, 64-bit</span><br><span class="line">BIOS:		AMI P1.50 11/16/2017</span><br><span class="line">Hostname:	MiWiFi-R1CM-srv</span><br></pre></td></tr></table></figure></p>
 <h3 id="硬件层"><a href="#硬件层" class="headerlink" title="硬件层"></a>硬件层</h3><h4 id="硬件存储体系简述"><a href="#硬件存储体系简述" class="headerlink" title="硬件存储体系简述"></a>硬件存储体系简述</h4><p>在x86服务器上，本地存储介质的连接方式主要有以下几种，<-> 表示互相连接。</-></p>
 <ul>
 <li>内存 <-> CPU <-> Raid/HBA卡 <-> SATA/SAS HDD/SSD</-></-></-></li>
@@ -571,8 +821,8 @@
 <li>内存 <-> CPU <-> PCIe/NVMe SSD</-></-></li>
 </ul>
 <p>CPU包含内存控制器，直连内存。内存一般存放应用自身维护的cache和系统的page cache，内存当然是掉电数据丢失的。<br>为了提升性能，Raid卡、HDD、SSD都有自身的write cache，这些write cache是影响落盘的硬件层面因素。</p>
-<h4 id="HDD-SSD-write-cache"><a href="#HDD-SSD-write-cache" class="headerlink" title="HDD/SSD write cache"></a>HDD/SSD write cache</h4><p>这里简单测试一下就好。我们可以用hdparm来查看、关闭、打开write cache。<br>这里少于ms级的数据写入时间，明显是HDD的write cache的返回。<br><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ata]# hdparm -W /dev/sdc</span><br><span class="line">/dev/sdc:</span><br><span class="line"> write-caching =  1 (on)</span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ata]# dd <span class="attribute">if</span>=/dev/zero <span class="attribute">of</span>=/dev/sdc <span class="attribute">count</span>=1 <span class="attribute">bs</span>=4k <span class="attribute">oflag</span>=direct</span><br><span class="line">记录了1+0 的读入</span><br><span class="line">记录了1+0 的写出</span><br><span class="line">4096字节(4.1 kB)已复制，0.000929063 秒，4.4 MB/秒</span><br></pre></td></tr></table></figure></p>
-<p>可以看到，关闭HDD cache对写入的延迟影响是巨大的。<br><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ata]# hdparm -W 0 /dev/sdc</span><br><span class="line">/dev/sdc:</span><br><span class="line"> setting drive write-caching <span class="keyword">to</span> 0 (off)</span><br><span class="line"> write-caching =  0 (off)</span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ata]# dd <span class="attribute">if</span>=/dev/zero <span class="attribute">of</span>=/dev/sdc <span class="attribute">count</span>=1 <span class="attribute">bs</span>=4k <span class="attribute">oflag</span>=direct</span><br><span class="line">记录了1+0 的读入</span><br><span class="line">记录了1+0 的写出</span><br><span class="line">4096字节(4.1 kB)已复制，0.042402 秒，96.6 kB/秒</span><br></pre></td></tr></table></figure></p>
+<h4 id="HDD-SSD-write-cache"><a href="#HDD-SSD-write-cache" class="headerlink" title="HDD/SSD write cache"></a>HDD/SSD write cache</h4><p>这里简单测试一下就好。我们可以用hdparm来查看、关闭、打开write cache。<br>这里少于ms级的数据写入时间，明显是HDD的write cache的返回。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ata]# hdparm -W /dev/sdc</span><br><span class="line">/dev/sdc:</span><br><span class="line"> write-caching =  1 (on)</span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ata]# dd if=/dev/zero of=/dev/sdc count=1 bs=4k oflag=direct</span><br><span class="line">记录了1+0 的读入</span><br><span class="line">记录了1+0 的写出</span><br><span class="line">4096字节(4.1 kB)已复制，0.000929063 秒，4.4 MB/秒</span><br></pre></td></tr></table></figure></p>
+<p>可以看到，关闭HDD cache对写入的延迟影响是巨大的。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ata]# hdparm -W 0 /dev/sdc</span><br><span class="line">/dev/sdc:</span><br><span class="line"> setting drive write-caching to 0 (off)</span><br><span class="line"> write-caching =  0 (off)</span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ata]# dd if=/dev/zero of=/dev/sdc count=1 bs=4k oflag=direct</span><br><span class="line">记录了1+0 的读入</span><br><span class="line">记录了1+0 的写出</span><br><span class="line">4096字节(4.1 kB)已复制，0.042402 秒，96.6 kB/秒</span><br></pre></td></tr></table></figure></p>
 <h4 id="刷盘指令"><a href="#刷盘指令" class="headerlink" title="刷盘指令"></a>刷盘指令</h4><p>由于write cache enable后，掉电数据丢失，为了保证数据落盘，也就引出了刷盘命令。<br>简单的说，刷盘是把HDD/SSD write cache里的数据写入存储介质（碟片/Nand），数据写入完毕后，再返回OK。</p>
 <p>可以参考wikipedia关于刷盘的介绍。</p>
 <p><a href="https://en.wikipedia.org/wiki/Disk_buffer" target="_blank" rel="noopener">https://en.wikipedia.org/wiki/Disk_buffer</a><br>Cache flushing<br>Data that was accepted in write cache of a disk device will be eventually written to disk platters, provided that no starvation condition occurs as a result of firmware flaw, and that disk power supply is not interrupted before cached writes are forced to disk platters. In order to control write cache, ATA specification included FLUSH CACHE (E7h) and FLUSH CACHE EXT (EAh) commands. These commands cause the disk to complete writing data from its cache, and disk will return good status after data in the write cache is written to disk media. In addition, flushing the cache can be initiated at least to some disks by issuing Soft reset or Standby (Immediate) command.[4]</p>
@@ -597,13 +847,13 @@
 <p>关于SCSI子系统、NVMe的IO路径，可以参考这幅著名的Linux IO stack图。<br>连接：<a href="https://www.thomas-krenn.com/en/wiki/Linux_Storage_Stack_Diagram" target="_blank" rel="noopener">Linux Storage Stack Diagram
 </a></p>
 <h4 id="SCSI和ATA的转换"><a href="#SCSI和ATA的转换" class="headerlink" title="SCSI和ATA的转换"></a>SCSI和ATA的转换</h4><p>这里有一个非常关键的知识点：在Linux内核里，除了NVMe以外，存储设备都是在SCSI体系内管理的。应用层的读写操作，会以bio的形式提交给block层，然后，block会把bio转换成request，并把该request加入到专为某个SCSI device服务的request queue中，接下来会有内核线程适时地从该queue中摘取request，并转换成SCSI cmd，再转换成ATA cmd，最终交由AHCI Controller（对于AHCI，实际上会把ATA cmd转换成FIS结构）发向硬盘执行。<br>参考：<a href="http://www.cnblogs.com/raymondpang/articles/4469500.html" target="_blank" rel="noopener">request到ATA cmd的转换过程</a></p>
-<p>我们接下来看看下发的SCSI的具体指令，打开scsi的日志信息，注意这里是-1。<br>参考：<a href="https://blog.csdn.net/fhqfghgdx1993/article/details/79915918" target="_blank" rel="noopener">Linux 开启 SCSI 日志调试功能</a><br><figure class="highlight tcl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">scsi_logging_level 值可以在 boot 命令行设置也可以开启设备后在 /<span class="keyword">proc</span> 文件系统中设置：</span><br><span class="line">-1   -<span class="title"> Enable</span> scsi<span class="title"> events</span> to<span class="title"> syslog.</span>         // 开启所有scsi<span class="title"> log</span></span><br><span class="line"><span class="title">0  </span>  -<span class="title"> Disable</span> scsi<span class="title"> events</span> to<span class="title"> syslog.</span>        // 关闭所有scsi<span class="title"> log</span></span><br><span class="line"><span class="title">命令:</span></span><br><span class="line"><span class="title"></span> <span class="title">   echo</span> 0/-1 &gt; /<span class="keyword">proc</span>/sys/dev/scsi/logging_level</span><br></pre></td></tr></table></figure></p>
-<p>我们知道sync命令就有刷盘的功能，执行一次再看看dmesg日志。这里下发了CDB 35H<br><figure class="highlight dns"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[<span class="number">47505.162954</span>] sd <span class="number">0:0:0:0</span>: [sda] tag#<span class="number">5</span> Send: scmd <span class="number">0</span>xffff97b61d238fc0</span><br><span class="line">[<span class="number">47505.162965</span>] sd <span class="number">0:0:0:0</span>: [sda] tag#<span class="number">5</span> CDB: Synchronize Cache(<span class="number">10</span>) <span class="number">35 00 00 00</span> <span class="number">00 00 00 00</span> <span class="number">00</span> <span class="number">00</span></span><br><span class="line">[<span class="number">47505.163957</span>] sd <span class="number">0:0:0:0</span>: [sda] tag#<span class="number">5</span> Done: SUCCESS Result: hostbyte=DID_OK driverbyte=DRIVER_OK</span><br><span class="line">[<span class="number">47505.163974</span>] sd <span class="number">0:0:0:0</span>: [sda] tag#<span class="number">5</span> CDB: Synchronize Cache(<span class="number">10</span>) <span class="number">35 00 00 00</span> <span class="number">00 00 00 00</span> <span class="number">00</span> <span class="number">00</span></span><br><span class="line">[<span class="number">47505.163985</span>] sd <span class="number">0:0:0:0</span>: [sda] tag#<span class="number">5</span> scsi host busy <span class="number">1</span> failed <span class="number">0</span></span><br><span class="line">[<span class="number">47505.164003</span>] sd <span class="number">0:0:0:0</span>: Notifying upper driver of completion (result <span class="number">0</span>)</span><br><span class="line">[<span class="number">47505.164013</span>] sd <span class="number">0:0:0:0</span>: [sda] tag#<span class="number">5</span> sd_done: completed <span class="number">0</span> of <span class="number">0</span> bytes</span><br><span class="line">[<span class="number">47505.164023</span>] sd <span class="number">0:0:0:0</span>: [sda] tag#<span class="number">5</span> <span class="number">0</span> sectors total, <span class="number">0</span> bytes done.</span><br></pre></td></tr></table></figure></p>
+<p>我们接下来看看下发的SCSI的具体指令，打开scsi的日志信息，注意这里是-1。<br>参考：<a href="https://blog.csdn.net/fhqfghgdx1993/article/details/79915918" target="_blank" rel="noopener">Linux 开启 SCSI 日志调试功能</a><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">scsi_logging_level 值可以在 boot 命令行设置也可以开启设备后在 /proc 文件系统中设置：</span><br><span class="line">-1   - Enable scsi events to syslog.         // 开启所有scsi log</span><br><span class="line">0    - Disable scsi events to syslog.        // 关闭所有scsi log</span><br><span class="line">命令:</span><br><span class="line">    echo 0/-1 &gt; /proc/sys/dev/scsi/logging_level</span><br></pre></td></tr></table></figure></p>
+<p>我们知道sync命令就有刷盘的功能，执行一次再看看dmesg日志。这里下发了CDB 35H<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[47505.162954] sd 0:0:0:0: [sda] tag#5 Send: scmd 0xffff97b61d238fc0</span><br><span class="line">[47505.162965] sd 0:0:0:0: [sda] tag#5 CDB: Synchronize Cache(10) 35 00 00 00 00 00 00 00 00 00</span><br><span class="line">[47505.163957] sd 0:0:0:0: [sda] tag#5 Done: SUCCESS Result: hostbyte=DID_OK driverbyte=DRIVER_OK</span><br><span class="line">[47505.163974] sd 0:0:0:0: [sda] tag#5 CDB: Synchronize Cache(10) 35 00 00 00 00 00 00 00 00 00</span><br><span class="line">[47505.163985] sd 0:0:0:0: [sda] tag#5 scsi host busy 1 failed 0</span><br><span class="line">[47505.164003] sd 0:0:0:0: Notifying upper driver of completion (result 0)</span><br><span class="line">[47505.164013] sd 0:0:0:0: [sda] tag#5 sd_done: completed 0 of 0 bytes</span><br><span class="line">[47505.164023] sd 0:0:0:0: [sda] tag#5 0 sectors total, 0 bytes done.</span><br></pre></td></tr></table></figure></p>
 <p>在SCSI命令集里，35h指令对应的是SYNCHRONIZE CACHE，也就是刷盘。<br>The SYNCHRONIZE CACHE (10) command (see table 199) requests that the device server ensure that the specified logical blocks have their most recent data values recorded in non-volatile cache and/or on the medium.<br>参考：<a href="https://www.seagate.com/files/staticfiles/support/docs/manual/Interface%20manuals/100293068k.pdf" target="_blank" rel="noopener">SCSI Commands Reference Manual</a></p>
-<h4 id="刷盘命令的转换"><a href="#刷盘命令的转换" class="headerlink" title="刷盘命令的转换"></a>刷盘命令的转换</h4><p>SCSI的SYNCHRONIZE CACHE，ATA的FLUSH CACHE EXT，这是两条刷盘命令。<br>我用的是SATA HDD/SSD，是在SCSI体系里使用ATA设备，刷盘命令也需要转换。<br>通过搜索官方文档，可以看到libata-scsi.c里的ata_scsi_flush_xlat函数，就是做这个事。<br><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">ata_scsi_flush_xlat</span><br><span class="line">Translate SCSI SYNCHRONIZE <span class="keyword">CACHE</span> command</span><br><span class="line"></span><br><span class="line">Description</span><br><span class="line"><span class="keyword">Sets</span> up an ATA taskfile <span class="keyword">to</span> issue <span class="keyword">FLUSH</span> <span class="keyword">CACHE</span> <span class="keyword">or</span> <span class="keyword">FLUSH</span> <span class="keyword">CACHE</span> EXT.</span><br></pre></td></tr></table></figure></p>
+<h4 id="刷盘命令的转换"><a href="#刷盘命令的转换" class="headerlink" title="刷盘命令的转换"></a>刷盘命令的转换</h4><p>SCSI的SYNCHRONIZE CACHE，ATA的FLUSH CACHE EXT，这是两条刷盘命令。<br>我用的是SATA HDD/SSD，是在SCSI体系里使用ATA设备，刷盘命令也需要转换。<br>通过搜索官方文档，可以看到libata-scsi.c里的ata_scsi_flush_xlat函数，就是做这个事。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">ata_scsi_flush_xlat</span><br><span class="line">Translate SCSI SYNCHRONIZE CACHE command</span><br><span class="line"></span><br><span class="line">Description</span><br><span class="line">Sets up an ATA taskfile to issue FLUSH CACHE or FLUSH CACHE EXT.</span><br></pre></td></tr></table></figure></p>
 <p>参考：<a href="https://www.kernel.org/doc/html/latest/driver-api/libata.html#c.ata_scsi_flush_xlat" target="_blank" rel="noopener">The Linux driver implementer’s API guide » libATA Developer’s Guide</a></p>
-<p>跟踪一下sync的在libata内核模块的执行路径，这里用到systemtap。<br>在ata_scsi_queuecmd里，可以看到 SCSI cmd -&gt; ATA cmd -&gt; FIS 这个过程。<br><figure class="highlight autoit"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">[root<span class="symbol">@MiWiFi</span>-R1CM-srv ~]<span class="meta"># cat libata.stp </span></span><br><span class="line"><span class="meta">#!/usr/bin/stap -v</span></span><br><span class="line"></span><br><span class="line">probe module(<span class="string">"libata"</span>).function(<span class="string">"*"</span>).<span class="built_in">call</span> &#123;</span><br><span class="line">    printf (<span class="string">"Call  : %s -&gt; %s\n"</span>, thread_indent(<span class="number">2</span>) ,ppfunc())</span><br><span class="line">&#125;</span><br><span class="line">probe module(<span class="string">"libata"</span>).function(<span class="string">"*"</span>).<span class="keyword">return</span> &#123;</span><br><span class="line">    printf (<span class="string">"Return: %s &lt;- %s\n"</span>, thread_indent(<span class="number">-2</span>) ,ppfunc())</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">[root<span class="symbol">@MiWiFi</span>-R1CM-srv ~]<span class="meta"># stap libata.stp </span></span><br><span class="line"><span class="built_in">Call</span>  :      <span class="number">0</span> sync(<span class="number">9551</span>):  -&gt; ata_scsi_queuecmd</span><br><span class="line"><span class="built_in">Call</span>  :      <span class="number">2</span> sync(<span class="number">9551</span>):    -&gt; ata_scsi_find_dev</span><br><span class="line"><span class="built_in">Call</span>  :      <span class="number">3</span> sync(<span class="number">9551</span>):      -&gt; __ata_scsi_find_dev</span><br><span class="line"><span class="built_in">Call</span>  :      <span class="number">4</span> sync(<span class="number">9551</span>):        -&gt; ata_find_dev</span><br><span class="line"><span class="keyword">Return</span>:      <span class="number">5</span> sync(<span class="number">9551</span>):        &lt;- ata_find_dev</span><br><span class="line"><span class="keyword">Return</span>:      <span class="number">6</span> sync(<span class="number">9551</span>):      &lt;- __ata_scsi_find_dev</span><br><span class="line"><span class="keyword">Return</span>:      <span class="number">7</span> sync(<span class="number">9551</span>):    &lt;- ata_scsi_find_dev</span><br><span class="line"><span class="built_in">Call</span>  :      <span class="number">8</span> sync(<span class="number">9551</span>):    -&gt; ata_qc_new_init</span><br><span class="line"><span class="keyword">Return</span>:      <span class="number">8</span> sync(<span class="number">9551</span>):    &lt;- ata_qc_new_init</span><br><span class="line"><span class="built_in">Call</span>  :     <span class="number">10</span> sync(<span class="number">9551</span>):    -&gt; ata_scsi_flush_xlat</span><br><span class="line"><span class="keyword">Return</span>:     <span class="number">11</span> sync(<span class="number">9551</span>):    &lt;- ata_scsi_flush_xlat</span><br><span class="line"><span class="built_in">Call</span>  :     <span class="number">12</span> sync(<span class="number">9551</span>):    -&gt; ata_std_qc_defer</span><br><span class="line"><span class="keyword">Return</span>:     <span class="number">13</span> sync(<span class="number">9551</span>):    &lt;- ata_std_qc_defer</span><br><span class="line"><span class="built_in">Call</span>  :     <span class="number">13</span> sync(<span class="number">9551</span>):    -&gt; ata_qc_issue</span><br><span class="line"><span class="built_in">Call</span>  :     <span class="number">14</span> sync(<span class="number">9551</span>):      -&gt; ata_tf_to_fis</span><br><span class="line"><span class="keyword">Return</span>:     <span class="number">15</span> sync(<span class="number">9551</span>):      &lt;- ata_tf_to_fis</span><br><span class="line"><span class="keyword">Return</span>:     <span class="number">16</span> sync(<span class="number">9551</span>):    &lt;- ata_qc_issue</span><br><span class="line"><span class="keyword">Return</span>:     <span class="number">17</span> sync(<span class="number">9551</span>):  &lt;- ata_scsi_queuecmd</span><br></pre></td></tr></table></figure></p>
-<p>查看ata_tf_to_fis函数的结构体tf-&gt;command，可以看到sync转换之后，发出的ATA CMD是EAh，也就是上一章里的FLUSH CACHE EXT (EAh) commands。<br><figure class="highlight xl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# cat ata_tf_to_fis.stp </span><br><span class="line">#!/usr/bin/stap -v</span><br><span class="line"></span><br><span class="line">probe module(<span class="string">"libata"</span>).function(<span class="string">"ata_tf_to_fis"</span>).call &#123;</span><br><span class="line">    <span class="function"><span class="title">printf</span> ("Call  : %s -&gt;</span> %<span class="function"><span class="title">s</span> -&gt;</span> %<span class="number">4</span><span class="function"><span class="title">x</span>\n", thread_indent(0) ,ppfunc(), $tf-&gt;</span>command)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">C<span class="function"><span class="title">all</span>  :      0 sync(10614): -&gt;</span> <span class="function"><span class="title">ata_tf_to_fis</span> -&gt;</span>   ea</span><br></pre></td></tr></table></figure></p>
+<p>跟踪一下sync的在libata内核模块的执行路径，这里用到systemtap。<br>在ata_scsi_queuecmd里，可以看到 SCSI cmd -&gt; ATA cmd -&gt; FIS 这个过程。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# cat libata.stp </span><br><span class="line">#!/usr/bin/stap -v</span><br><span class="line"></span><br><span class="line">probe module(&quot;libata&quot;).function(&quot;*&quot;).call &#123;</span><br><span class="line">    printf (&quot;Call  : %s -&gt; %s\n&quot;, thread_indent(2) ,ppfunc())</span><br><span class="line">&#125;</span><br><span class="line">probe module(&quot;libata&quot;).function(&quot;*&quot;).return &#123;</span><br><span class="line">    printf (&quot;Return: %s &lt;- %s\n&quot;, thread_indent(-2) ,ppfunc())</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# stap libata.stp </span><br><span class="line">Call  :      0 sync(9551):  -&gt; ata_scsi_queuecmd</span><br><span class="line">Call  :      2 sync(9551):    -&gt; ata_scsi_find_dev</span><br><span class="line">Call  :      3 sync(9551):      -&gt; __ata_scsi_find_dev</span><br><span class="line">Call  :      4 sync(9551):        -&gt; ata_find_dev</span><br><span class="line">Return:      5 sync(9551):        &lt;- ata_find_dev</span><br><span class="line">Return:      6 sync(9551):      &lt;- __ata_scsi_find_dev</span><br><span class="line">Return:      7 sync(9551):    &lt;- ata_scsi_find_dev</span><br><span class="line">Call  :      8 sync(9551):    -&gt; ata_qc_new_init</span><br><span class="line">Return:      8 sync(9551):    &lt;- ata_qc_new_init</span><br><span class="line">Call  :     10 sync(9551):    -&gt; ata_scsi_flush_xlat</span><br><span class="line">Return:     11 sync(9551):    &lt;- ata_scsi_flush_xlat</span><br><span class="line">Call  :     12 sync(9551):    -&gt; ata_std_qc_defer</span><br><span class="line">Return:     13 sync(9551):    &lt;- ata_std_qc_defer</span><br><span class="line">Call  :     13 sync(9551):    -&gt; ata_qc_issue</span><br><span class="line">Call  :     14 sync(9551):      -&gt; ata_tf_to_fis</span><br><span class="line">Return:     15 sync(9551):      &lt;- ata_tf_to_fis</span><br><span class="line">Return:     16 sync(9551):    &lt;- ata_qc_issue</span><br><span class="line">Return:     17 sync(9551):  &lt;- ata_scsi_queuecmd</span><br></pre></td></tr></table></figure></p>
+<p>查看ata_tf_to_fis函数的结构体tf-&gt;command，可以看到sync转换之后，发出的ATA CMD是EAh，也就是上一章里的FLUSH CACHE EXT (EAh) commands。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# cat ata_tf_to_fis.stp </span><br><span class="line">#!/usr/bin/stap -v</span><br><span class="line"></span><br><span class="line">probe module(&quot;libata&quot;).function(&quot;ata_tf_to_fis&quot;).call &#123;</span><br><span class="line">    printf (&quot;Call  : %s -&gt; %s -&gt; %4x\n&quot;, thread_indent(0) ,ppfunc(), $tf-&gt;command)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">Call  :      0 sync(10614): -&gt; ata_tf_to_fis -&gt;   ea</span><br></pre></td></tr></table></figure></p>
 <p>至此，通过驱动层，我们知道，在SCSI子系统里，刷盘是SYNCHRONIZE CACHE这条SCSI命令，经过转换为ATA命令，发到磁盘上是FLUSH CACHE EXT。</p>
 <h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
 <li>带掉电保护的设备，不需要刷盘。</li>
@@ -615,154 +865,6 @@
 </ul>
 <h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><p>本文引用了很多文章，这里附上额外的一些参考，一并致谢。</p>
 <p><a href="https://unix.stackexchange.com/questions/144561/in-what-sense-does-sata-talk-scsi-how-much-is-shared-between-scsi-and-ata" target="_blank" rel="noopener">In what sense does SATA “talk” SCSI? How much is shared between SCSI and ATA?</a></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/03/使用wireguard打通内网机器和外网云服务器/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Roger K">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="运维深处">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/使用wireguard打通内网机器和外网云服务器/" itemprop="url">使用wireguard打通内网机器和外网云服务器</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-22T19:37:13+08:00">
-                2019-03-22
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/网络/" itemprop="url" rel="index">
-                    <span itemprop="name">网络</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="场景"><a href="#场景" class="headerlink" title="场景"></a>场景</h3><p>这是我个人的需求，但是也有借鉴意义。<br>需要在外部连接家里的机器做测试，家里路由器拨号之后没有公网IP，所以使用一台具有公网IP的阿里云ECS服务器作为中转，打通内网的机器和阿里云服务器。<br>在以往，我会使用strongswan来搭建IKEv2的VPN来实现这个需求，但是现在有更简单好用的wireguard了。</p>
-<h3 id="wireguard介绍"><a href="#wireguard介绍" class="headerlink" title="wireguard介绍"></a>wireguard介绍</h3><p>毕竟是VPN软件，所以需要翻墙访问。<br><a href="https://www.wireguard.com/" target="_blank" rel="noopener">wireguard官网</a><br><a href="https://www.wireguard.com/presentations/" target="_blank" rel="noopener">wireguard官网的视频介绍</a></p>
-<h3 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h3><p>两台CentOS 7.6，都可以访问公网。<br>A机器仅有内网IP，B机器有公网IP和内网IP。</p>
-<h3 id="配置方式"><a href="#配置方式" class="headerlink" title="配置方式"></a>配置方式</h3><figure class="highlight makefile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">A机器(家里)内网(192.168.31.0/24)</span><br><span class="line">B机器(ECS)内网(172.16.100.0/24)</span><br><span class="line"></span><br><span class="line"><span class="section">分别在每个机器执行:</span></span><br><span class="line">yum install -y epel-release</span><br><span class="line">curl -Lo /etc/yum.repos.d/wireguard.repo https://copr.fedorainfracloud.org/coprs/jdoss/wireguard/repo/epel-7/jdoss-wireguard-epel-7.repo</span><br><span class="line"></span><br><span class="line">yum install wireguard-dkms wireguard-tools -y</span><br><span class="line">mkdir -p  /etc/wireguard</span><br><span class="line">umask 077</span><br><span class="line">cd  /etc/wireguard</span><br><span class="line">wg genkey | tee privatekey | wg pubkey &gt; publickey</span><br><span class="line">vim wg0.conf 内容如下:</span><br><span class="line"></span><br><span class="line">[Interface]</span><br><span class="line">PrivateKey = 本机的privatekey</span><br><span class="line">ListenPort = 2503</span><br><span class="line">PostUp = iptables -A FORWARD -i wg0 -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE</span><br><span class="line">PostDown = iptables -D FORWARD -i wg0 -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE</span><br><span class="line">MTU = 1500</span><br><span class="line">[Peer]</span><br><span class="line">PublicKey = 远端的publickey</span><br><span class="line">Endpoint = 远端的ip:2503（公网ip，至少需要一端有，没有就不写）</span><br><span class="line">AllowedIPs = 远端的网段</span><br><span class="line"></span><br><span class="line">启动</span><br><span class="line">systemctl start wg-quick@wg0.service </span><br><span class="line">echo 'net.ipv4.ip_forward = 1'  &gt;&gt; /etc/sysctl.conf </span><br><span class="line">启用转发</span><br><span class="line">sysctl -p </span><br><span class="line"></span><br><span class="line">分别A,B机器启动, 然后ping对方, 谁先ping, 谁就发起连接。</span><br><span class="line">由于我的环境里，只有阿里云ECS才有公网IP，所以我只能由家里机器发起ping。</span><br><span class="line">配置上开机启动服务。</span><br><span class="line">systemctl enable wg-quick@wg0.service</span><br></pre></td></tr></table></figure>
-<p>要开机自动连接到阿里云，就写个crontab的ping，每分钟ping一次好了。<br>这里我使用家里的机器，ping阿里云服务器的内网IP，即可自动建立连接。<br><figure class="highlight routeros"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# cat /etc/crontab </span><br><span class="line"><span class="attribute">SHELL</span>=/bin/bash</span><br><span class="line"><span class="attribute">PATH</span>=/sbin:/bin:/usr/sbin:/usr/bin</span><br><span class="line">MAILTO=</span><br><span class="line"></span><br><span class="line"><span class="comment"># For details see man 4 crontabs</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Example of job definition:</span></span><br><span class="line"><span class="comment"># .---------------- minute (0 - 59)</span></span><br><span class="line"><span class="comment"># |  .------------- hour (0 - 23)</span></span><br><span class="line"><span class="comment"># |  |  .---------- day of month (1 - 31)</span></span><br><span class="line"><span class="comment"># |  |  |  .------- month (1 - 12) OR jan,feb,mar,apr ...</span></span><br><span class="line"><span class="comment"># |  |  |  |  .---- day of week (0 - 6) (Sunday=0 or 7) OR sun,mon,tue,wed,thu,fri,sat</span></span><br><span class="line"><span class="comment"># |  |  |  |  |</span></span><br><span class="line"><span class="comment"># *  *  *  *  * user-name  command to be executed</span></span><br><span class="line">*  *  *  *  * root <span class="built_in"> ping </span>-c1 172.16.100.38 &amp;&gt; /dev/<span class="literal">null</span></span><br><span class="line"></span><br><span class="line">wg show 查看状态</span><br></pre></td></tr></table></figure></p>
-<p>由于wireguard是内核模块，需要注意内核各个rpm包小版本一致。<br>例如我这里，都是3.10.0-957.5.1.el7.x86_64这个小版本。<br><figure class="highlight lsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# rpm -qa | grep kernel</span><br><span class="line">kernel<span class="number">-3.10</span><span class="number">.0</span><span class="number">-957.5</span><span class="number">.1</span>.el7.x86_64</span><br><span class="line">kernel-headers<span class="number">-3.10</span><span class="number">.0</span><span class="number">-957.5</span><span class="number">.1</span>.el7.x86_64</span><br><span class="line">kernel-tools-libs<span class="number">-3.10</span><span class="number">.0</span><span class="number">-957.5</span><span class="number">.1</span>.el7.x86_64</span><br><span class="line">kernel-devel<span class="number">-3.10</span><span class="number">.0</span><span class="number">-957.5</span><span class="number">.1</span>.el7.x86_64</span><br><span class="line">kernel-debuginfo<span class="number">-3.10</span><span class="number">.0</span><span class="number">-957.5</span><span class="number">.1</span>.el7.x86_64</span><br><span class="line">kernel-tools<span class="number">-3.10</span><span class="number">.0</span><span class="number">-957.5</span><span class="number">.1</span>.el7.x86_64</span><br><span class="line">kernel-debuginfo-common-x86_64<span class="number">-3.10</span><span class="number">.0</span><span class="number">-957.5</span><span class="number">.1</span>.el7.x86_64</span><br></pre></td></tr></table></figure></p>
-<h3 id="解决ssh长输出变卡"><a href="#解决ssh长输出变卡" class="headerlink" title="解决ssh长输出变卡"></a>解决ssh长输出变卡</h3><p>从远程通过wireguard vpn连接到本地机器时，ssh之后敲命令正常，但是长输出命令就会卡住，例如dmesg。<br>这种问题是由于MTU造成的丢包重传延迟。<br>把cat /etc/wireguard/wg0.conf配置文件里的MTU =1500设置小一点，例如1400，我这边问题解决，dmesg命令秒开。</p>
 
           
         
@@ -849,7 +951,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">7</span>
+                  <span class="site-state-item-count">8</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
