@@ -293,6 +293,174 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/03/全链路分析数据落盘机制-跟踪sync命令/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Roger K">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="运维深处">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/03/全链路分析数据落盘机制-跟踪sync命令/" itemprop="url">全链路分析数据落盘机制-跟踪sync命令</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-27T10:39:06+08:00">
+                2019-03-27
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/体系结构/" itemprop="url" rel="index">
+                    <span itemprop="name">体系结构</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>本文面向初学者，用sync这条命令来介绍刷盘经历了哪些过程，以及sync命令如何保证数据落盘。<br>本文可以了解一些跟踪系统调用的知识。</p>
+<h3 id="sync函数"><a href="#sync函数" class="headerlink" title="sync函数"></a>sync函数</h3><p>通过man sync可以看到，sync - flush file system buffers<br>Force changed blocks to disk, update the super block.<br>info命令还可以看到更多介绍：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">info coreutils &apos;sync invocation&apos;</span><br><span class="line"></span><br><span class="line">&apos;sync&apos; writes any data buffered in memory out to disk.  This can include</span><br><span class="line">(but is not limited to) modified superblocks, modified inodes, and</span><br><span class="line">delayed reads and writes.  This must be implemented by the kernel; The</span><br><span class="line">&apos;sync&apos; program does nothing but exercise the &apos;sync&apos; system call.</span><br><span class="line"></span><br><span class="line">   The kernel keeps data in memory to avoid doing (relatively slow) disk</span><br><span class="line">reads and writes.  This improves performance, but if the computer</span><br><span class="line">crashes, data may be lost or the file system corrupted as a result.  The</span><br><span class="line">&apos;sync&apos; command ensures everything in memory is written to disk.</span><br></pre></td></tr></table></figure></p>
+<p>sync命令属于coreutils这个rpm包，coreutils-8.22/src/sync.c。<br>打开源码，发现没有实际内容，只有最后的sync()函数有意义。<br>接下来查看sync()函数的说明，使用man 2 sync。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">NAME</span><br><span class="line">sync, syncfs - commit buffer cache to disk</span><br><span class="line"></span><br><span class="line">#include &lt;unistd.h&gt;</span><br><span class="line"></span><br><span class="line">DESCRIPTION</span><br><span class="line">       sync() causes all buffered modifications to file metadata and data to be written to the underlying file systems.</span><br></pre></td></tr></table></figure></p>
+<p>可以看到/usr/include/unistd.h，这个文件属于glibc，属于glibc-headers这个rpm包，<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">/* Make all changes done to all files actually appear on disk.  */</span><br><span class="line">extern void sync (void) __THROW;</span><br></pre></td></tr></table></figure></p>
+<p>glibc的unistd.h里sync函数，是对sync系统调用的一个包装，因为刷盘是一个与内核强相关的底层操作，glibc作为标准C库，仅靠自身是无法实现这些功能的，要借助内核来实现。</p>
+<p>下面背景知识和概念需要了解：</p>
+<ul>
+<li>libc实际上是一个泛指。凡是符合实现了C标准规定的内容，都是一种libc。</li>
+<li>glibc是GNU组织对libc的一种实现。它是unix/linux的根基之一。</li>
+<li>几乎所有C程序都要调用glibc的库函数，所以glibc是Linux平台C程序运行的基础。</li>
+<li>glibc除了封装linux操作系统所提供的系统服务外，它本身也提供了许多其它一些必要功能服务的实现。</li>
+<li>系统调用（system call）是指操作系统提供给程序调用的接口。</li>
+<li>glibc中的open,read,write,close,stat,mkdir等函数其实都是是系统调用，准确的讲是系统调用的封装函数。</li>
+</ul>
+<h3 id="sync系统调用"><a href="#sync系统调用" class="headerlink" title="sync系统调用"></a>sync系统调用</h3><p>接下来，我们需要从glibc的sync函数，分析到sync的系统调用。<br>内核的unistd.h头文件在/usr/include/linux/unistd.h，属于kernel-headers这个rpm包。<br>接着又指向/usr/include/asm/unistd.h，根据体系结构，指向unistd_64.h。<br>unistd_64.h 里面看到有__NR_sync的宏定义，162这个数字就是这个sync系统调用的编号。<br>在/usr/include/asm-generic/unistd.h里，指出了源文件和函数名sys_sync。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">/* fs/sync.c */</span><br><span class="line">#define __NR_sync 81</span><br><span class="line">__SYSCALL(__NR_sync, sys_sync)</span><br></pre></td></tr></table></figure></p>
+<p>这里需要注意，在不同的体系结构里，系统调用号是不同的。<br>asm-generic/unistd.h里的sync系统调用编号是81，因为asm-generic这是一个通用的系统调用编号文件，在我们x86_64系统里不适用。我们需要参考asm/unistd_64.h里的编号，也就是162。可以使用gcc编译器命令来查看预定义的宏的调用，也指向asm/unistd_64.h。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv linux]# echo -n &quot;#include &lt;sys/syscall.h&gt;&quot; | gcc -E -</span><br><span class="line"># 1 &quot;&lt;stdin&gt;&quot;</span><br><span class="line"># 1 &quot;&lt;built-in&gt;&quot;</span><br><span class="line"># 1 &quot;&lt;命令行&gt;&quot;</span><br><span class="line"># 1 &quot;/usr/include/stdc-predef.h&quot; 1 3 4</span><br><span class="line"># 1 &quot;&lt;命令行&gt;&quot; 2</span><br><span class="line"># 1 &quot;&lt;stdin&gt;&quot;</span><br><span class="line"># 1 &quot;/usr/include/sys/syscall.h&quot; 1 3 4</span><br><span class="line"># 24 &quot;/usr/include/sys/syscall.h&quot; 3 4</span><br><span class="line"># 1 &quot;/usr/include/asm/unistd.h&quot; 1 3 4</span><br><span class="line"># 12 &quot;/usr/include/asm/unistd.h&quot; 3 4</span><br><span class="line"># 1 &quot;/usr/include/asm/unistd_64.h&quot; 1 3 4</span><br><span class="line"># 13 &quot;/usr/include/asm/unistd.h&quot; 2 3 4</span><br><span class="line"># 25 &quot;/usr/include/sys/syscall.h&quot; 2 3 4</span><br><span class="line">...</span><br><span class="line"># 1 &quot;/usr/include/bits/syscall.h&quot; 1 3 4</span><br><span class="line"># 32 &quot;/usr/include/sys/syscall.h&quot; 2 3 4</span><br><span class="line"># 1 &quot;&lt;stdin&gt;&quot; 2</span><br></pre></td></tr></table></figure></p>
+<p>由此，可以知道fs/sync.c就是我们要找的源文件。<br>linux-3.10.0-957.5.1.el7.x86_64/fs/sync.c</p>
+<h3 id="fs-sync-c"><a href="#fs-sync-c" class="headerlink" title="fs/sync.c"></a>fs/sync.c</h3><p>这个文件包含sync相关的函数定义：High-level sync()-related operations<br>需要注意，这里无法直接找到sync函数定义，需要用宏定义展开SYSCALL_DEFINE0(sync)才能得到sys_sync函数。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">/*</span><br><span class="line"> * Sync everything. We start by waking flusher threads so that most of</span><br><span class="line"> * writeback runs on all devices in parallel. Then we sync all inodes reliably</span><br><span class="line"> * which effectively also waits for all flusher threads to finish doing</span><br><span class="line"> * writeback. At this point all data is on disk so metadata should be stable</span><br><span class="line"> * and we tell filesystems to sync their metadata via -&gt;sync_fs() calls.</span><br><span class="line"> * Finally, we writeout all block devices because some filesystems (e.g. ext2)</span><br><span class="line"> * just write metadata (such as inodes or bitmaps) to block device page cache</span><br><span class="line"> * and do not sync it on their own in -&gt;sync_fs().</span><br><span class="line"> */</span><br><span class="line">SYSCALL_DEFINE0(sync)</span><br><span class="line">&#123;</span><br><span class="line">        int nowait = 0, wait = 1;</span><br><span class="line"></span><br><span class="line">        wakeup_flusher_threads(0, WB_REASON_SYNC);</span><br><span class="line">        iterate_supers(sync_inodes_one_sb, NULL);</span><br><span class="line">        iterate_supers(sync_fs_one_sb, &amp;nowait);</span><br><span class="line">        iterate_supers(sync_fs_one_sb, &amp;wait);</span><br><span class="line">        iterate_bdevs(fdatawrite_one_bdev, NULL);</span><br><span class="line">        iterate_bdevs(fdatawait_one_bdev, NULL);</span><br><span class="line">        if (unlikely(laptop_mode))</span><br><span class="line">                laptop_sync_completion();</span><br><span class="line">        return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>SYSCALL_DEFINE0这个宏在linux/syscalls.h里定义：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">#define SYSCALL_DEFINE0(sname)                                  \</span><br><span class="line">        SYSCALL_METADATA(_##sname, 0);                          \</span><br><span class="line">        asmlinkage long sys_##sname(void)</span><br></pre></td></tr></table></figure></p>
+<p>所以SYSCALL_DEFINE0(sync)展开得到：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SYSCALL_METADATA(_sync, 0);                          \</span><br><span class="line">asmlinkage long sys_sync(void)</span><br></pre></td></tr></table></figure></p>
+<p>至此，我们就得到了sys_sync这个系统调用函数。</p>
+<h3 id="sys-sync以及相关实验"><a href="#sys-sync以及相关实验" class="headerlink" title="sys_sync以及相关实验"></a>sys_sync以及相关实验</h3><p>对于sys_sync这个系统调用函数，非常底层的代码我们不做分析了，内核水太深，我们这里用两个工具来测试。</p>
+<h4 id="ftrace跟踪调用过程"><a href="#ftrace跟踪调用过程" class="headerlink" title="ftrace跟踪调用过程"></a>ftrace跟踪调用过程</h4><p>我们可以用ftrace跟踪sync完整的调用过程。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# cat function.sh </span><br><span class="line">#!/bin/bash</span><br><span class="line">debugfs=/sys/kernel/debug</span><br><span class="line">echo nop &gt; $debugfs/tracing/current_tracer</span><br><span class="line">echo 0 &gt; $debugfs/tracing/tracing_on</span><br><span class="line">echo $$ &gt; $debugfs/tracing/set_ftrace_pid</span><br><span class="line">echo function_graph &gt; $debugfs/tracing/current_tracer</span><br><span class="line">#replace test_proc_show by your function name</span><br><span class="line">echo sys_sync &gt; $debugfs/tracing/set_graph_function</span><br><span class="line">echo 1 &gt; $debugfs/tracing/tracing_on</span><br><span class="line">exec &quot;$@&quot;</span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# sh function.sh sync</span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# cat /sys/kernel/debug/tracing/trace &gt; 1</span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# head 1</span><br><span class="line"># tracer: function_graph</span><br><span class="line">#</span><br><span class="line"># CPU  DURATION                  FUNCTION CALLS</span><br><span class="line"># |     |   |                     |   |   |   |</span><br><span class="line"> 5)               |  sys_sync() &#123;</span><br><span class="line"> 5)               |    wakeup_flusher_threads() &#123;</span><br><span class="line"> 5)               |      get_nr_dirty_pages() &#123;</span><br><span class="line"> 5)               |        get_nr_dirty_inodes() &#123;</span><br><span class="line"> 5)   0.163 us    |          get_nr_inodes();</span><br><span class="line"> 5)   0.608 us    |        &#125;</span><br><span class="line"> </span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# echo 0 &gt; /sys/kernel/debug/tracing/tracing_on</span><br></pre></td></tr></table></figure></p>
+<p>可以参考，还有vim配置用于展开ftrace文件：<a href="https://mp.weixin.qq.com/s?__biz=MzAwMDUwNDgxOA==&amp;mid=2652663542&amp;idx=1&amp;sn=1e19be71d650eba288b0341d09e164df&amp;chksm=810f286bb678a17d06b4659d00717517f3f65ab8a6452a33e799b6010b00814895647bc188d7&amp;scene=21#wechat_redirect" target="_blank" rel="noopener">宋宝华：关于Ftrace的一个完整案例</a></p>
+<h4 id="systemtap验证同步调用"><a href="#systemtap验证同步调用" class="headerlink" title="systemtap验证同步调用"></a>systemtap验证同步调用</h4><p>我们用systemtap来延长硬件刷盘底层函数时间，来验证上层的sync是一个同步阻塞调用。<br>从代码来看，sync_fs_one_sb, &amp;wait的确是一个同步调用。但是网上搜到的很多资料说sync是一个异步调用，不能保证数据落盘，还要多敲几次，多等待，这点非常存疑（搞笑，那sync命令有什么用？）。<br>使用systemtap来做实验，是比研读内核代码以外更快的验证方法。<br>根据上一篇文章，我们知道，当有刷盘的数据落盘时，一定会执行ata_scsi_flush_xlat这个函数，我们尝试把这个函数延长1秒：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# stap -g -v -e &apos;probe module(&quot;libata&quot;).function(&quot;ata_scsi_flush_xlat&quot;).return &#123;mdelay(1000)&#125;&apos;</span><br><span class="line">Pass 1: parsed user script and 470 library scripts using 244796virt/42192res/3488shr/38848data kb, in 210usr/20sys/227real ms.</span><br><span class="line">Pass 2: analyzed script: 1 probe, 1 function, 1 embed, 0 globals using 246768virt/45252res/4428shr/40820data kb, in 30usr/50sys/76real ms.</span><br><span class="line">Pass 3: using cached /root/.systemtap/cache/0f/stap_0f1684821eb395fa3d8126b925059598_1315.c</span><br><span class="line">Pass 4: using cached /root/.systemtap/cache/0f/stap_0f1684821eb395fa3d8126b925059598_1315.ko</span><br><span class="line">Pass 5: starting run.</span><br></pre></td></tr></table></figure></p>
+<p>新开一个终端：可以看到，sync的时间明显变长，而且一直卡住直到结束。可以说明sync这是一个同步调用，会保证数据落盘再返回。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# touch 2</span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# time sync</span><br><span class="line"></span><br><span class="line">real	0m2.007s</span><br><span class="line">user	0m0.334s</span><br><span class="line">sys	0m0.668s</span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# touch 3</span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# time sync</span><br><span class="line"></span><br><span class="line">real	0m1.961s</span><br><span class="line">user	0m0.000s</span><br><span class="line">sys	0m0.001s</span><br></pre></td></tr></table></figure></p>
+<h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><p>不详述所有参考，贴一些重要的：<br><a href="https://lwn.net/Articles/604287/" target="_blank" rel="noopener">Anatomy of a system call, part 1</a><br><a href="https://lwn.net/Articles/604515/" target="_blank" rel="noopener">Anatomy of a system call, part 1</a></p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/03/全链路分析数据落盘机制-硬件及驱动层/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -630,199 +798,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/03/纠正几个Linux的IO监控指标的误区/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Roger K">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="运维深处">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/纠正几个Linux的IO监控指标的误区/" itemprop="url">纠正几个Linux的IO监控指标的误区</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-19T14:37:50+08:00">
-                2019-03-19
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/性能分析/" itemprop="url" rel="index">
-                    <span itemprop="name">性能分析</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>本文主要面向初级工程师，假设你已经对的Linux性能监控工具有所了解，例如top、vmstat、mpstat、iostat等。</p>
-<p>日常工作中，碰到IO性能问题是常有的事，本文主要探讨Linux下的IO监控里容易产生误区的点。</p>
-<p>这些误区，一方面是因为工程师想当然，不仔细看文档，不理解底层细节。另一方面是因为Linux内核和监控工具的发展，落后于存储设备硬件的发展，软硬件发展存在脱节，因此监控工具不能反映硬件的真实情况。</p>
-<p>纠正这些误区，对这些监控和背后原理理解越深刻，越能评估一个系统性能的真实情况，定位和解决问题也更容易。</p>
-<h3 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h3><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">Summary:	ASRock Z370M-ITX/ac, 1 x Core i5-8400 2.80GHz, 15.2GB / 16GB 2400MT/s DDR4</span><br><span class="line">System:		ASRock Z370M-ITX/ac</span><br><span class="line">Processors:	1 x Core i5-8400 2.80GHz 100MHz FSB (6 cores)</span><br><span class="line">Memory:		15.2GB / 16GB 2400MT/s DDR4 == 2 x 8GB</span><br><span class="line">Disk:		sda (scsi0): 240GB (0%) JBOD == 1 x LITEON-EGT-240N9S</span><br><span class="line">Disk:		sdb: 100GB JBOD == 1 x INTEL-SSDSA2BZ100G3</span><br><span class="line">Disk:		sdc (scsi2): 1.0TB JBOD == 1 x WDC-WD10JPLX-00MBPT1</span><br><span class="line">OS:		CentOS Linux 7.6.1810 (Core) , Linux 3.10.0-957.10.1.el7.x86_64 x86_64, 64-bit</span><br><span class="line">BIOS:		AMI P1.50 11/16/2017</span><br><span class="line">Hostname:	MiWiFi-R1CM-srv</span><br></pre></td></tr></table></figure>
-<p>这是一台普通的x86台式机，sdb是Intel SSD 710 Series，sdc是西数的7200转黑盘。使用这两块盘来做后面的实验。</p>
-<h3 id="正文"><a href="#正文" class="headerlink" title="正文"></a>正文</h3><p>下面介绍四个容易产生误区的指标，分别是%iowait、await、svctm、%util。顺序上会把%util放在svctm之前介绍。</p>
-<h3 id="iowait"><a href="#iowait" class="headerlink" title="%iowait"></a>%iowait</h3><ul>
-<li>正确：%iowait（wa）是CPU的一种IDLE，%iowait大小不能用来反映IO瓶颈。</li>
-<li>误区：（1）%iowait高，CPU很忙。（2）%iowait高，磁盘IO瓶颈。</li>
-</ul>
-<h4 id="解释"><a href="#解释" class="headerlink" title="解释"></a>解释</h4><p>%iowait（来自mpstat）和wa（来自top、vmstat）是同一个指标，表示在一个采样周期内，CPU空闲在等待未完成的IO请求所占的白分比。iowait的产生要满足两个条件，一是进程在等io，二是等io时没有进程可运行。</p>
-<h4 id="误区（1）-iowait高，CPU很忙。"><a href="#误区（1）-iowait高，CPU很忙。" class="headerlink" title="误区（1）%iowait高，CPU很忙。"></a>误区（1）%iowait高，CPU很忙。</h4><p>先看官方文档说明：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">man vmstat</span><br><span class="line">wa: Time spent waiting for IO.  Prior to Linux 2.5.41, included in idle.</span><br><span class="line"></span><br><span class="line">man mpstat</span><br><span class="line">%iowait</span><br><span class="line">Show the percentage of time that the CPU or CPUs were idle during which the system had an outstanding disk I/O request.</span><br></pre></td></tr></table></figure></p>
-<p>文档已经明确显示，%iowait是一种IDLE，尤其在2.5.41以前的旧内核里，%iowait是直接统计在idle里的。既然%iowait的显示的百分比是一种IDLE，它是可以被其它进程使用的。%iowait高，CPU其实很闲，因为其它进程都在随眠。</p>
-<h4 id="实验验证"><a href="#实验验证" class="headerlink" title="实验验证"></a>实验验证</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line">在这台完全空闲的机器上，对sdc进行随机读，可以看到IOPS大约是60多，这与7200rpm的机械硬盘性能是相符的。</span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# fio -filename=/dev/sdc -direct=1 -iodepth 1 -thread -rw=randread -ioengine=psync -bs=4k  -runtime=180 -group_reporting -name=rand_100read_4k</span><br><span class="line">rand_100read_4k: (g=0): rw=randread, bs=(R) 4096B-4096B, (W) 4096B-4096B, (T) 4096B-4096B, ioengine=psync, iodepth=1</span><br><span class="line">fio-3.1</span><br><span class="line">Starting 1 thread</span><br><span class="line">Jobs: 1 (f=1): [r(1)][6.7%][r=252KiB/s,w=0KiB/s][r=63,w=0 IOPS][eta 02m:48s]</span><br><span class="line"></span><br><span class="line">此时，我们看%iowait，可以看到在核心6上，100%的iowait。</span><br><span class="line">top - 22:27:51 up  3:08,  3 users,  load average: 2.37, 2.40, 1.31</span><br><span class="line">Tasks: 157 total,   1 running, 156 sleeping,   0 stopped,   0 zombie</span><br><span class="line">%Cpu0  :  0.0 us,  0.3 sy,  0.0 ni, 99.7 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu1  :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu2  :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu3  :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu4  :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu5  :  0.0 us,  0.3 sy,  0.0 ni,  0.0 id, 99.7 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">KiB Mem : 15934084 total, 11211948 free,   290604 used,  4431532 buff/cache</span><br><span class="line">KiB Swap:  8061948 total,  8061948 free,        0 used. 14941848 avail Mem </span><br><span class="line"></span><br><span class="line">这时，我们起一个stress打满CPU看看。</span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# stress -c 6</span><br><span class="line">stress: info: [9856] dispatching hogs: 6 cpu, 0 io, 0 vm, 0 hdd</span><br><span class="line"></span><br><span class="line">可以看到，起了6个stress打满了6个核心，fio进程还在运行，但是%iowait已经被“吃掉”了，说明这部分IDLE的CPU时间片已经被stress征用了。</span><br><span class="line">top - 22:28:36 up  3:09,  3 users,  load average: 3.63, 2.67, 1.45</span><br><span class="line">Tasks: 162 total,   7 running, 155 sleeping,   0 stopped,   0 zombie</span><br><span class="line">%Cpu0  :100.0 us,  0.0 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu1  :100.0 us,  0.0 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu2  :100.0 us,  0.0 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu3  : 99.7 us,  0.3 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu4  :100.0 us,  0.0 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu5  : 99.7 us,  0.3 sy,  0.0 ni,  0.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">KiB Mem : 15934084 total, 11208508 free,   293992 used,  4431584 buff/cache</span><br><span class="line">KiB Swap:  8061948 total,  8061948 free,        0 used. 14938420 avail Mem </span><br><span class="line"></span><br><span class="line">  PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND                                                                           </span><br><span class="line"> 9857 root      20   0    7308     96      0 R 100.0  0.0   0:22.69 stress                                                                            </span><br><span class="line"> 9861 root      20   0    7308     96      0 R 100.0  0.0   0:22.71 stress                                                                            </span><br><span class="line"> 9862 root      20   0    7308     96      0 R 100.0  0.0   0:22.71 stress                                                                            </span><br><span class="line"> 9858 root      20   0    7308     96      0 R  99.7  0.0   0:22.67 stress                                                                            </span><br><span class="line"> 9859 root      20   0    7308     96      0 R  99.7  0.0   0:22.68 stress                                                                            </span><br><span class="line"> 9860 root      20   0    7308     96      0 R  99.7  0.0   0:22.70 stress                                                                            </span><br><span class="line"> 9834 root      20   0 1091604 293556 261636 S   0.3  1.8   0:01.06 fio</span><br></pre></td></tr></table></figure>
-<h4 id="误区（2）-iowait高，磁盘IO瓶颈。"><a href="#误区（2）-iowait高，磁盘IO瓶颈。" class="headerlink" title="误区（2）%iowait高，磁盘IO瓶颈。"></a>误区（2）%iowait高，磁盘IO瓶颈。</h4><p>由之前的解释可以看到，这个指标是描述CPU的IDLE的，它与磁盘IO是否到达瓶颈一点关系都没有，它都不是一个用来描述磁盘IO性能的指标。</p>
-<h4 id="实验验证-1"><a href="#实验验证-1" class="headerlink" title="实验验证"></a>实验验证</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line">这个实验使用ssd，如下fio命令，在6个进程下，ssd的随机读性能是25k iops，%iowait超过80%。</span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# fio -filename=/dev/sdb -direct=1 -iodepth 1 -thread -rw=randread -ioengine=psync -bs=4k  -runtime=180 -group_reporting -numjobs=6 -name=rand_100read_4k</span><br><span class="line">rand_100read_4k: (g=0): rw=randread, bs=(R) 4096B-4096B, (W) 4096B-4096B, (T) 4096B-4096B, ioengine=psync, iodepth=1</span><br><span class="line">...</span><br><span class="line">fio-3.1</span><br><span class="line">Starting 6 threads</span><br><span class="line">Jobs: 6 (f=6): [r(6)][20.0%][r=97.0MiB/s,w=0KiB/s][r=25.1k,w=0 IOPS][eta 02m:24s]</span><br><span class="line"></span><br><span class="line"> top - 22:45:45 up  3:26,  3 users,  load average: 4.68, 2.59, 1.81</span><br><span class="line">Tasks: 158 total,   1 running, 157 sleeping,   0 stopped,   0 zombie</span><br><span class="line">%Cpu0  :  0.7 us,  6.7 sy,  0.0 ni,  3.4 id, 89.2 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu1  :  1.3 us,  6.4 sy,  0.0 ni,  1.3 id, 91.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu2  :  1.3 us,  7.0 sy,  0.0 ni,  3.7 id, 88.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu3  :  0.7 us,  7.0 sy,  0.0 ni,  2.0 id, 90.3 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu4  :  1.3 us,  6.7 sy,  0.0 ni,  1.3 id, 90.6 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu5  :  1.7 us,  7.3 sy,  0.0 ni,  5.2 id, 83.3 wa,  0.0 hi,  2.6 si,  0.0 st</span><br><span class="line">KiB Mem : 15934084 total, 11223276 free,   278992 used,  4431816 buff/cache</span><br><span class="line">KiB Swap:  8061948 total,  8061948 free,        0 used. 14953420 avail Mem </span><br><span class="line"></span><br><span class="line">还是这块盘，ioengine我们从psync改成aio，同时把iodepth从1改成了8，可以看到44k的IOPS，但是%iowait却是0。</span><br><span class="line">这里说明，%iowait大小与磁盘瓶颈毫无关系，由于aio是异步的，CPU不需要IDLE等待IO，也就不会产生%iowait。</span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# fio -filename=/dev/sdb -direct=1 -iodepth 8 -thread -rw=randread -ioengine=libaio -bs=4k  -runtime=180 -group_reporting -numjobs=6 -name=rand_100read_4k</span><br><span class="line">rand_100read_4k: (g=0): rw=randread, bs=(R) 4096B-4096B, (W) 4096B-4096B, (T) 4096B-4096B, ioengine=libaio, iodepth=8</span><br><span class="line">...</span><br><span class="line">fio-3.1</span><br><span class="line">Starting 6 threads</span><br><span class="line">Jobs: 6 (f=6): [r(6)][5.6%][r=173MiB/s,w=0KiB/s][r=44.2k,w=0 IOPS][eta 02m:50s]</span><br><span class="line"></span><br><span class="line">top - 22:49:31 up  3:30,  3 users,  load average: 1.14, 2.61, 2.06</span><br><span class="line">Tasks: 156 total,   1 running, 155 sleeping,   0 stopped,   0 zombie</span><br><span class="line">%Cpu0  :  3.0 us,  4.0 sy,  0.0 ni, 93.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu1  :  2.0 us,  3.0 sy,  0.0 ni, 95.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu2  :  0.3 us,  0.7 sy,  0.0 ni, 99.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu3  :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu4  :  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">%Cpu5  :  5.8 us,  6.9 sy,  0.0 ni, 87.3 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st</span><br><span class="line">KiB Mem : 15934084 total, 11219948 free,   282280 used,  4431856 buff/cache</span><br><span class="line">KiB Swap:  8061948 total,  8061948 free,        0 used. 14950088 avail Mem </span><br><span class="line"></span><br><span class="line">  PID USER      PR  NI    VIRT    RES    SHR S  %CPU %MEM     TIME+ COMMAND                                                                           </span><br><span class="line">10091 root      20   0 1431564 281112 261664 S  33.6  1.8   0:26.54 fio</span><br></pre></td></tr></table></figure>
-<h3 id="await"><a href="#await" class="headerlink" title="await"></a>await</h3><ul>
-<li>正确：表示IO从创建到完成的平均时间，包含IO排队时间+存储设备处理时间。</li>
-<li>误区：（1）混淆%iowait和await。（2）认为await高等于磁盘慢。</li>
-</ul>
-<h4 id="解释-1"><a href="#解释-1" class="headerlink" title="解释"></a>解释</h4><p>await是iostat里的指标，iostat属于sysstat这个rpm包。<br>await表示平均每个IO所需要的时间，包括在队列等待的时间，也包括磁盘控制器处理本次请求的有效时间。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">man iostat</span><br><span class="line">await</span><br><span class="line">The average time (in milliseconds) for I/O requests issued to the device to be served. This includes the  time  spent  by  the requests in queue and the time spent servicing them.</span><br><span class="line"></span><br><span class="line">这里借用blktrace的blkparse显示的各指标点，await是从IO到达block层开始算起，包含排队时间，到最后IO完毕。</span><br><span class="line">Q-------&gt;G------------&gt;I---------&gt;M-------------------&gt;D-----------------------------&gt;C</span><br><span class="line">|-Q time-|-Insert time-|</span><br><span class="line">|--------- merge time ------------|-merge with other IO|</span><br><span class="line">|----------------scheduler time time-------------------|---driver,adapter,storagetime--|</span><br></pre></td></tr></table></figure></p>
-<h4 id="误区（1）混淆-iowait和await。"><a href="#误区（1）混淆-iowait和await。" class="headerlink" title="误区（1）混淆%iowait和await。"></a>误区（1）混淆%iowait和await。</h4><p>在工作中，我遇到过几次运维和研发人员混淆这两个概念的，弄清楚并在表述的时候注意即可。</p>
-<h4 id="误区（2）认为await高等于磁盘慢。"><a href="#误区（2）认为await高等于磁盘慢。" class="headerlink" title="误区（2）认为await高等于磁盘慢。"></a>误区（2）认为await高等于磁盘慢。</h4><p>await包含了队列时间，我们只需要保持磁盘压力不变的情况下，增加队列深度即可验证这个问题。</p>
-<h4 id="实验验证-2"><a href="#实验验证-2" class="headerlink" title="实验验证"></a>实验验证</h4><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">这里，我们限制IOPS为100，先用队列深度8，可以看到await 80。</span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# fio -filename=/dev/sdc -direct=1 -iodepth 8 -thread -rw=randread -ioengine=libaio -bs=4k  -runtime=180 -group_reporting -numjobs=1 -name=rand_100read_4k -rate_iops=100</span><br><span class="line">rand_100read_4k: (g=0): rw=randread, bs=(R) 4096B-4096B, (W) 4096B-4096B, (T) 4096B-4096B, ioengine=libaio, iodepth=8</span><br><span class="line">fio-3.1</span><br><span class="line">Starting 1 thread</span><br><span class="line">Jobs: 1 (f=1), 0-100 IOPS: [r(1)][5.6%][r=400KiB/s,w=0KiB/s][r=100,w=0 IOPS][eta 02m:50s]</span><br><span class="line"></span><br><span class="line">Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util</span><br><span class="line">sda               0.00     0.00    0.00    0.00     0.00     0.00     0.00     0.00    0.00    0.00    0.00   0.00   0.00</span><br><span class="line">sdc               0.00     0.00   97.00    0.00     0.38     0.00     8.00     8.00   84.79   84.79    0.00  10.31 100.00</span><br><span class="line">sdb               0.00     0.00    0.00    0.00     0.00     0.00     0.00     0.00    0.00    0.00    0.00   0.00   0.00</span><br><span class="line"></span><br><span class="line">还是限制IOPS为100，队列深度调高到16，可以看到，IOPS不变的情况下，await增加到110左右。</span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# fio -filename=/dev/sdc -direct=1 -iodepth 16 -thread -rw=randread -ioengine=libaio -bs=4k  -runtime=180 -group_reporting -numjobs=1 -name=rand_100read_4k -rate_iops=100</span><br><span class="line">rand_100read_4k: (g=0): rw=randread, bs=(R) 4096B-4096B, (W) 4096B-4096B, (T) 4096B-4096B, ioengine=libaio, iodepth=16</span><br><span class="line">fio-3.1</span><br><span class="line">Starting 1 thread</span><br><span class="line">Jobs: 1 (f=1), 0-100 IOPS: [r(1)][8.3%][r=400KiB/s,w=0KiB/s][r=100,w=0 IOPS][eta 02m:45s]</span><br><span class="line"></span><br><span class="line">Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util</span><br><span class="line">sda               0.00     0.00    0.00    0.00     0.00     0.00     0.00     0.00    0.00    0.00    0.00   0.00   0.00</span><br><span class="line">sdc               0.00     0.00  101.00    0.00     0.39     0.00     8.00    11.93  109.34  109.34    0.00   9.86  99.60</span><br><span class="line">sdb               0.00     0.00    0.00    0.00     0.00     0.00     0.00     0.00    0.00    0.00    0.00   0.00   0.00</span><br></pre></td></tr></table></figure>
-<h3 id="util"><a href="#util" class="headerlink" title="%util"></a>%util</h3><ul>
-<li>正确：iostat里的%util并不能准确反映存储设备使用率（或者称为饱和率）。</li>
-<li>误区：%util就是存储设备硬件的使用率，达到100%时就到磁盘瓶颈了。</li>
-</ul>
-<h4 id="解释-2"><a href="#解释-2" class="headerlink" title="解释"></a>解释</h4><p>%util估算了一个使用率，但是存储设备的使用率以及是否饱和，是没有接口告诉Linux系统的。<br>%util通过/proc/diskstats计算得到，不关心等待在队里里面IO的个数，它只关心队列中有没有IO。。<br>整个计算方式把存储设备当做只能串行处理IO的磁盘，当使用支持并发处理IO的存储设备时，此项就不准确了。<br>当%util是100%时，代表Linux队列里一直有IO，但不能代表硬件存储设备已经饱和。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">在sysstat网站的最新文档中也已经注明： But for devices serving requests in parallel, such as RAID arrays and modern SSDs, this number does not reflect their performance limits.</span><br><span class="line"></span><br><span class="line">文档地址：http://sebastien.godard.pagesperso-orange.fr/man_iostat.html</span><br><span class="line"></span><br><span class="line">%util</span><br><span class="line">Percentage of elapsed time during which I/O requests were issued to the device (bandwidth utilization for the device).  Device saturation occurs when this value is close to 100%.</span><br></pre></td></tr></table></figure></p>
-<h4 id="实验验证-3"><a href="#实验验证-3" class="headerlink" title="实验验证"></a>实验验证</h4><p>由于%util是以单并发的存储设备设计的，只要是支持多并发的存储设备，%util就不准确了。提升并发数，即可验证这个问题。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">同样的测试用例，我们num-jobs从4改到8，可以看到，使用率都是100%，但是IOPS有巨大的不同。</span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# fio -filename=/dev/sdb -direct=1 -iodepth 1 -thread -rw=randread -ioengine=psync -bs=4k  -runtime=180 -group_reporting -numjobs=4 -name=rand_100read_4k </span><br><span class="line">rand_100read_4k: (g=0): rw=randread, bs=(R) 4096B-4096B, (W) 4096B-4096B, (T) 4096B-4096B, ioengine=psync, iodepth=1</span><br><span class="line">...</span><br><span class="line">fio-3.1</span><br><span class="line">Starting 4 threads</span><br><span class="line">Jobs: 4 (f=4): [r(4)][3.3%][r=74.7MiB/s,w=0KiB/s][r=19.1k,w=0 IOPS][eta 02m:54s]</span><br><span class="line"></span><br><span class="line">Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util</span><br><span class="line">sda               0.00     0.00    0.00    0.00     0.00     0.00     0.00     0.00    0.00    0.00    0.00   0.00   0.00</span><br><span class="line">sdc               0.00     0.00    0.00    0.00     0.00     0.00     0.00     0.00    0.00    0.00    0.00   0.00   0.00</span><br><span class="line">sdb               0.00     0.00 18078.00    0.00    70.62     0.00     8.00     3.57    0.20    0.20    0.00   0.06 100.00</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# fio -filename=/dev/sdb -direct=1 -iodepth 1 -thread -rw=randread -ioengine=psync -bs=4k  -runtime=180 -group_reporting -numjobs=8 -name=rand_100read_4k </span><br><span class="line">rand_100read_4k: (g=0): rw=randread, bs=(R) 4096B-4096B, (W) 4096B-4096B, (T) 4096B-4096B, ioengine=psync, iodepth=1</span><br><span class="line">...</span><br><span class="line">fio-3.1</span><br><span class="line">Starting 8 threads</span><br><span class="line">Jobs: 8 (f=8): [r(8)][7.8%][r=110MiB/s,w=0KiB/s][r=28.2k,w=0 IOPS][eta 02m:46s]</span><br><span class="line"></span><br><span class="line">Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util</span><br><span class="line">sda               0.00     0.00    0.00    0.00     0.00     0.00     0.00     0.00    0.00    0.00    0.00   0.00   0.00</span><br><span class="line">sdc               0.00     0.00    0.00    0.00     0.00     0.00     0.00     0.00    0.00    0.00    0.00   0.00   0.00</span><br><span class="line">sdb               0.00     0.00 28233.00    0.00   110.29     0.00     8.00     7.31    0.26    0.26    0.00   0.04 100.00</span><br></pre></td></tr></table></figure></p>
-<h3 id="svctm"><a href="#svctm" class="headerlink" title="svctm"></a>svctm</h3><ul>
-<li>正确：iostat里的svctm并不能准确反映存储设备的处理时间。</li>
-<li>误区：svctm就是存储设备硬件处理IO的时间。</li>
-</ul>
-<h4 id="解释-3"><a href="#解释-3" class="headerlink" title="解释"></a>解释</h4><p>从官方文档可以看到，Do not trust this field any more.<br>实际上，iostat获取这个svctm仅是通过一个简单计算。<br>iostat计算svctm需要使用%util，但%util在多并发IO里，本身就是不准确的，所以间接造成svctm也不准确。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">svctm</span><br><span class="line">The  average  service time (in milliseconds) for I/O requests that were issued to the device. Warning! Do not trust this field any more.  This field will be removed in a future sysstat version.</span><br></pre></td></tr></table></figure></p>
-<h4 id="实验验证-4"><a href="#实验验证-4" class="headerlink" title="实验验证"></a>实验验证</h4><p>对于相同的IO模型，存储设备的处理时间都应该是一样的。如果压力越大，存储设备处理时间应该越长才对。我们验证svctm是否和真实情况一样。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">我们使用SSD做实验，可以看到，当从4个并发提升到32个并发时，IOPS从19k提升到44k，但是svctm却从0.05ms下降到0.02ms，明显不符合现实。</span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# fio -filename=/dev/sdb -direct=1 -iodepth 1 -thread -rw=randread -ioengine=psync -bs=4k  -runtime=180 -group_reporting -numjobs=4 -name=rand_100read_4k </span><br><span class="line">rand_100read_4k: (g=0): rw=randread, bs=(R) 4096B-4096B, (W) 4096B-4096B, (T) 4096B-4096B, ioengine=psync, iodepth=1</span><br><span class="line">...</span><br><span class="line">fio-3.1</span><br><span class="line">Starting 4 threads</span><br><span class="line">Jobs: 4 (f=4): [r(4)][5.0%][r=74.6MiB/s,w=0KiB/s][r=19.1k,w=0 IOPS][eta 02m:51s]</span><br><span class="line"></span><br><span class="line">Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util</span><br><span class="line">sda               0.00     0.00    0.00    0.00     0.00     0.00     0.00     0.00    0.00    0.00    0.00   0.00   0.00</span><br><span class="line">sdc               0.00     0.00    0.00    0.00     0.00     0.00     0.00     0.00    0.00    0.00    0.00   0.00   0.00</span><br><span class="line">sdb               0.00     0.00 19069.00    0.00    74.49     0.00     8.00     3.90    0.20    0.20    0.00   0.05 100.00</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# fio -filename=/dev/sdb -direct=1 -iodepth 1 -thread -rw=randread -ioengine=psync -bs=4k  -runtime=180 -group_reporting -numjobs=32 -name=rand_100read_4k </span><br><span class="line">rand_100read_4k: (g=0): rw=randread, bs=(R) 4096B-4096B, (W) 4096B-4096B, (T) 4096B-4096B, ioengine=psync, iodepth=1</span><br><span class="line">...</span><br><span class="line">fio-3.1</span><br><span class="line">Starting 32 threads</span><br><span class="line">Jobs: 32 (f=32): [r(32)][31.7%][r=172MiB/s,w=0KiB/s][r=44.1k,w=0 IOPS][eta 02m:03s]</span><br><span class="line">Device:         rrqm/s   wrqm/s     r/s     w/s    rMB/s    wMB/s avgrq-sz avgqu-sz   await r_await w_await  svctm  %util</span><br><span class="line">sda               0.00     0.00    0.00    0.00     0.00     0.00     0.00     0.00    0.00    0.00    0.00   0.00   0.00</span><br><span class="line">sdc               0.00     0.00    0.00    0.00     0.00     0.00     0.00     0.00    0.00    0.00    0.00   0.00   0.00</span><br><span class="line">sdb               0.00     0.00 44080.00    0.00   172.19     0.00     8.00    31.37    0.71    0.71    0.00   0.02 100.00</span><br></pre></td></tr></table></figure></p>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
-<li>%iowait并没有提供什么有效信息，因为它是描述IDLE的。</li>
-<li>%iowait大小受CPU的负载变化而变化，这个指标如果很大，除了能说明CPU很闲在等待IO以外，并不能反映IO压力或者瓶颈。另外，aio不会使CPU产生%iowait。</li>
-<li>iostat提供了基本的监控数据，但是分析IO瓶颈，关键是去看Linux的IO的监控指标是否打满了存储设备的真实性能，因此必须对存储设备在当前IO模型下具备的真实性能有所了解。</li>
-<li>这些值虽然不够准确，但是在生产环境中，仍然具备参考意义：当你的业务类型和压力没有任何变化时，如果这些值偏离了基线（baseline）或者历史平均值，则你需要去排查是否哪里出了问题。</li>
-</ul>
-<h3 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h3><p>本文讲解并不深入，更多的是实验思路。建议阅读下列文章，包含原理性的解释，一并致谢：<br><a href="https://mp.weixin.qq.com/s?__biz=MzAwMDUwNDgxOA==&amp;mid=2652663269&amp;idx=1&amp;sn=f0bddde33fd4c57bd708b3b14a004e98&amp;chksm=810f2b78b678a26e6e36b9e1c077d35af1ca7fca9c1b4f241d81d4618af949551079dc364a7f&amp;scene=21#wechat_redirect" target="_blank" rel="noopener">朱辉(茶水)： Linux Kernel iowait 时间的代码原理</a></p>
-<p><a href="http://bean-li.github.io/dive-into-iostat/" target="_blank" rel="noopener">深入理解iostat</a></p>
-<p><a href="https://www.jianshu.com/p/13de0aea7c1e" target="_blank" rel="noopener">辩证看待 iostat</a></p>
-<p><a href="https://github.com/zhishutech/tech-blog-en2zh/blob/master/mysql/1-zh-Looking%20at%20Disk%20Utilization%20and%20Saturation.md" target="_blank" rel="noopener">深入理解磁盘IO利用率及饱和度</a></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <a class="extend prev" rel="prev" href="/page/2/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span>
+    <a class="extend prev" rel="prev" href="/page/2/"><i class="fa fa-angle-left"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/4/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -869,7 +849,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">9</span>
+                  <span class="site-state-item-count">10</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -891,7 +871,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">9</span>
+                  <span class="site-state-item-count">10</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>

@@ -293,6 +293,195 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/04/3DXPoint与Optane学习笔记整理/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Roger K">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="运维深处">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/04/3DXPoint与Optane学习笔记整理/" itemprop="url">3DXPoint与Optane学习笔记整理</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-04-26T00:02:43+08:00">
+                2019-04-26
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/性能分析/" itemprop="url" rel="index">
+                    <span itemprop="name">性能分析</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>与时俱进、终身学习。<br>本文是针对公众号《企业存储技术》里面3DXPoint、Optane SSD相关文章的学习总结。文章涉及到的产品有</p>
+<ul>
+<li>Optane SSD 900P</li>
+<li>Optane SSD P4800X</li>
+</ul>
+<p>暂时不涉及Optane Persistent Memory（AEP）。</p>
+<h3 id="笔记部分"><a href="#笔记部分" class="headerlink" title="笔记部分"></a>笔记部分</h3><ol>
+<li>Intel已经研究PCM 45年了！3DXPoint其实就是3D的PCM。</li>
+<li>Intel CPU的内存控制器，将直接支持基于PCM的DIMM内存条（Far Memory，也就是3D XPoint），并保持在每个通道上同时支持DDR DRAM（Near Memory）的能力。</li>
+<li>HDD的10ms大致代表7200转硬盘，使用NAND闪存的SAS/SATA SSD超过100µs，换成NVMe接口降低到100µs以内，3D XPoint大约在10µs左右。</li>
+<li>性能预览：不再依赖于并发/队列深度，在很低的队列深度下就能达到接近峰值性能。</li>
+<li>3D Xpoint除了非易失特性之外，主要的优点就是可以比DRAM内存做得更大，并且单位容量更便宜。</li>
+<li>保守（真实）的NAND闪存。以ONFI 2.x 接口的Micron 512Gb MLC为例，物理块大小8800KB，页面即最小I/O单位16KB，读延时115μs，页面编程即写延时1600μs（1.6ms），而块擦除需要3ms。</li>
+<li>闪存如果要重复写入需要先擦除，即P/E Cycle的过程。可以说闪存控制器和SSD厂商做了大量工作，我们才能用到实际读/写延时100μs左右的产品，至于比这个低的，我只能说DRAM缓存了。</li>
+<li>Intel SSD标称的20μs延时是顺序读写，随机访问的读/写延时为115/25μs，显然写I/O还是进入了DRAM缓存里。</li>
+<li>除了平均延迟以外，还有一个重要概念叫QoS延迟，它代表在一定百分比范围内的响应时间最大值，反映了延时的稳定性，非常影响用户体验。例如QoS延时举例，4KB（KiB，4096字节）块大小、队列深度（QD）16、99.999%的读/写IO延时不超过150/200μs。</li>
+<li>Intel P3700在99.99% QoS范围、QD=1的4KB随机读延时为4ms，是Optane P4800X的60μs的接近70倍，而且后者的QoS等级还要更高。所以Intel以前强调3D XPoint介质的低队列深度读性能优势不是没有道理的。</li>
+<li>内存的基本操作单位是64bytes，现在发布的Optane SSD也像NAND闪存那样是块级设备，本身不能以字节方式寻址（未来还会有DIMM形态的3D XPoint）。Intel Memory Drive Technology要解决的就是这个问题，而该软件技术来自于一家合作伙伴ScaleMP。</li>
+<li>3D XPoint Memory可能不是普通的相变（结晶/非结晶态转换）或者电阻式存储介质，不像闪存要有一个P/E Cycle，即改写数据时不用先进行擦除操作了。这样也就不需要垃圾回收（GC），理论上编程的长度单位可以不受诸如页面、块之类的限制。那我为啥还给了个“写放大”的评价</li>
+<li>由于3D XPoint能就地改写，不像NAND闪存SSD那样需要OP来做垃圾回收，那么就是用于ECC、Firmware和其它维护操作。</li>
+<li>维护操作，显然还是需要有的。虽然不用GC了，但磨损平衡还要做，包括数据完整性扫描、搬移这些后台操作应该会有，以及像NAND闪存那样预留一些空间替换损坏的存储单元。</li>
+<li>Optane P4800X上没有单独的缓存芯片，也没看到有大容量电容。而据了解它实际上仍然具备Power Loss Imminent（PLI）技术，需要保护的临时buffer数据量很小而已。元数据映射表不再放在单独的DRAM中，因为3D XPoint Memory本身就是一种非易失性内存介质，而且它的速度足够快。</li>
+<li>Optane P4800X当队列深度=1延时小于10μs，QD=16也仅上升到20μs。可以看出PCIe接口在这里的限制，如果未来做成DIMM形态插在内存通道上，与闪存的差距预计还会加大。</li>
+<li>OptaneP4800X 375GB可能是7通道设计。根据QD=16基本达到峰值的测试数据来看，3D XPoint Memory的实际并发效果比NAND闪存要好。</li>
+<li>P3700的随机写一开始可达40万IOPS，当OP（超量分配）空间用满后台触发GC（垃圾回收）滑落到10万出头然后逐渐恢复到17万稳定值。</li>
+<li>下一代服务器对NVMe SSD数量支持的增加，未来高性能的存储应用负载，最终分摊到每节点上单一SSD的IO队列深度仍然不见得会很高。以P3700为代表的NAND闪存盘，许多应用中其最大IOPS可能无法充分发挥。Optane从根本上克服了NAND Flash的天生缺陷，利用更低和更稳定的时延，即便在很低的并发度下也能达到系统吞吐量的顶峰，天生适用于OLTP类业务。</li>
+<li>使用新型3D XPoint Memory非易失存储器介质的OptaneP4800X，相对于传统NAND闪存SSD价格不菲。以目前的情况，我们认为它更适合放置数据库日志，或者用于高速存储系统（如全闪存阵列/Server SAN）的大容量缓存。</li>
+<li>与之前Oracle测试中的情况类似，MySQL SysBench也是在数据库Cache命中率调低后，才能将SSD存储的差距放大。如今瓶颈更多在于CPU和软件本身，“软件的适配还跟不上硬件的发展”。</li>
+<li>SPDK在低并发/队列深度下的优势相当明显。无论IOPS还是延时，当队列深度1-4时SPDK的领先都在一倍以上，此时OptaneP4800X最低测出了6.49μs随机读延时的表现。</li>
+<li>当队列深度达到16之后，测试瓶颈开始显现在SSD硬件本身上面，SPDK和内核态没有明显差别了。也就是说，polling轮询相对于传统的中断I/O模式，3D XPoint Memory在低队列深度下的性能优势能够更好地发挥出来。</li>
+<li>随机写测试的情况类似，Optane P4800X在队列深度=1时延迟低至8μs。写和读有一点不同的是，当并发/队列深度达到16或以上，SPDK下的IOPS超过55万，比官方标称的50万还要高。与之对应的是，这时延迟也要比内核态低。</li>
+<li>Intel P3700随机读在SPDK下也有一些提高，但远不及Optane P4800X明显。究其原因，应该是传统NAND闪存SSD在低队列深度下的自身瓶颈所致。</li>
+<li>随机写，由于P3700上有DRAM Cache的帮助，SPDK带来的优势比读大了许多。同时也出现了和Optane P4800X类似的情况——最大写IOPS超出规格标称值，达到20.8万。</li>
+<li>性能和资源利用是一回事，而SPDK在应用中的普及则是另外一回事。毕竟传统文件系统、应用都是跟Kernel块设备打交道，要牵涉到开发习惯等方面的变化。</li>
+<li>随机写QoS延时，由于是单队列，绝大多数I/O都能在SSD的写缓存中先合并，所以如果只看平均延时，FIO测试的结果会看出两款卡相差不多。而到了高等级QoS特别是99.999%时，Optane才显出10倍以上的优势。</li>
+<li>高并发/QD下的的随机写QoS延时，可以说是Optane P4800X最擅长的地方。3D XPoint Memory介质可以直接写入，没有NAND闪存P/E Cycle（编程/擦除周期）产生的写放大，也不需要垃圾回收。所以我们看到P4800X的QD=16 99.999%随机写延时标称值为200μs，我实测1小时得到141μs，而P3700则高达8ms了。</li>
+<li>我们有时会看到一些消费级SSD的写IOPS指标，比不少企业级SSD还要高。这里面有容易被忽视的一点——闪存SSD如果限制测试LBA范围，其随机写性能通常比全盘测试高许多。于是在一些盘的规格资料小字中就可能看到“8GB Span”的备注。由于3D XPoint Memory属于类似PRAM相变内存的介质，不需要GC垃圾回收，所以8GB Span和100% Span性能完全一致。</li>
+</ol>
+<h3 id="应用程序角度"><a href="#应用程序角度" class="headerlink" title="应用程序角度"></a>应用程序角度</h3><ol>
+<li>对于单线程的同步I/O的应用，高时延单/多通道链路带来的是反应慢、吞吐量低的极差体验。也就是说，当你打开一个网页，不但浏览器状态栏半天才会从“正在连接”变到“正在接收数据”，而且“正在接收数据”这个状态也会持续很长时间，网页上的内容慢腾腾的逐步显示出来。</li>
+<li>对于多个或者多线程同步I/O应用并发访问场景，高时延单通道链路带来的是更慢上加慢让人无法忍受甚至最终让应用I/O超时引发宕机的灾难性体验。因为多线程会争抢唯一的一个通道，导致整体访问时延中不得不增加I/O的等待时延这个分量，也就是等待其他线程让出通道，自己被调度上通道。</li>
+<li>对于多个或者多线程同步I/O应用并发访问场景，高时延多通道链路带来的是反应慢、吞吐量低的极差体验。但是只要线程数量没有超过并发通道数，并且可以保证每个线程独占一个通道，那么多个线程并发之后，每个线程的体验是均等的，并不会像#2情况那样严重。</li>
+<li>对于单线程异步I/O应用，高时延单通道链路，体验与#2一致。</li>
+<li>对于单线程异步I/O应用，高时延多通道链路，体验较好，因为其可以利用其其他多个通道，从而可以提升整体吞吐量。</li>
+<li>时延越低，越有利于单线程同步I/O应用的性能，并发度越高，越有利于异步I/O应用。</li>
+<li>OLTP业务对IO的要求是时延和吞吐量兼具，而OLAP场景一般只要求吞吐量。同时，OLTP类业务发出同步模式的IO的比例远高于OLAP类业务，因为实时性场景下，很多时候必须一步一步的来，比如点击购买按钮，付款后，才能走下一步，没有任何电商为了实现批量下发IO获得高吞吐量而在你点击购买按钮之后不等你付款就直接让商家打包包裹去了。同步IO是最难优化的IO场景。一般都是OLTP类业务会遇到性能问题，就是因为其对时延有要求，自己还时不时就发送同步IO。</li>
+<li>OLTP类应用对时延和并发度都要求比较高，但是对时延更加敏感。OLTP的业务特征决定了其I/O中具有大量比例的同步I/O，而且有些批量异步I/O整体上可能取决于某个同步I/O，也就是只有某个I/O执行完毕，后续才会发出批量异步I/O，这种关联关系隐含的更加深，不容易被察觉。</li>
+</ol>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/04/测试16G的玩具傲腾Optane性能/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -605,180 +794,11 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/04/全链路分析数据落盘机制-文件系统层及块设备层/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Roger K">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="运维深处">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/04/全链路分析数据落盘机制-文件系统层及块设备层/" itemprop="url">全链路分析数据落盘机制-文件系统层及块设备层</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-04-07T17:31:08+08:00">
-                2019-04-07
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/体系结构/" itemprop="url" rel="index">
-                    <span itemprop="name">体系结构</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>本文从文件系统和块设备层介绍Linux内核关于数据落盘的机制。</p>
-<h3 id="总结之前的内容"><a href="#总结之前的内容" class="headerlink" title="总结之前的内容"></a>总结之前的内容</h3><h4 id="sync、fsync、fdatasync-和-fflush"><a href="#sync、fsync、fdatasync-和-fflush" class="headerlink" title="sync、fsync、fdatasync 和 fflush"></a>sync、fsync、fdatasync 和 fflush</h4><ul>
-<li>fopen(3)属于C标准库的函数，以数据流（stream）方式打开文件，fwrite(3)是写入应用层缓冲（glibc实现），不保证落盘，但有一个叫fflush(3)的函数好像有用？实际上fflush也属于C标准库，它仅仅是把应用层缓冲写入内核缓冲（pagecache），所以fflush和数据落盘也不沾边。</li>
-<li>sync(2)、fsync(2)、fdatasync(2)属于系统调用，应用程序调用时，内核会把内核缓冲（pagecache）数据写入磁盘。</li>
-<li>open属于系统调用，以文件描述符打开文件，使用O_DIRECT标志位来禁用pagecache。使用O_SYNC，O_DSYNC来达到每次write都实现fsync和fdatasync的效果，否则fsync和fdatasync只能作用一次。</li>
-<li>fsync(2)、fdatasync(2)的区别仅仅是，fdatasync不保证文件系统元数据落盘，性能更好，但有安全风险。</li>
-</ul>
-<p>这张图表明了这些层次关系，Summary of IO buffering：<br><img src="/2019/04/全链路分析数据落盘机制-文件系统层及块设备层/summaryiobuffer.jpg" alt="IO buffering"></p>
-<h3 id="DirectIO"><a href="#DirectIO" class="headerlink" title="DirectIO"></a>DirectIO</h3><p>这张图显示了DirectIO的路径：<br><img src="/2019/04/全链路分析数据落盘机制-文件系统层及块设备层/linux-io.png" alt="DirectIO"></p>
-<ul>
-<li>数据拷贝，从磁盘到Page Cache算第一次的话，从Page Cache到用户态buffer就是第二次。</li>
-<li>mmap(2)直接把Page Cache映射到了用户态的地址空间里了，所以mmap(2)的方式读文件是没有第二次拷贝过程。</li>
-<li>用户态和块IO层对接，直接放弃Page Cache，从磁盘直接和用户态拷贝数据。通过DMA的方式。</li>
-<li>mmap(2)和Direct IO均有数据按页对齐的要求，Direct IO还限制读写必须是底层存储设备块大小的整数倍。</li>
-</ul>
-<h3 id="文件系统层"><a href="#文件系统层" class="headerlink" title="文件系统层"></a>文件系统层</h3><p>sys_fsync/sys_datasync<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">---&gt; do_fsync</span><br><span class="line">  ---&gt; vfs_fsync</span><br><span class="line">    ---&gt; vfs_fsync_range</span><br><span class="line">      ---&gt; mark_inode_dirty_sync</span><br><span class="line">      |     ---&gt; ext4_dirty_inode</span><br><span class="line">      |     |     ---&gt; ext4_journal_start</span><br><span class="line">      |     |     ---&gt; ext4_mark_inode_dirty</span><br><span class="line">      |     |     ---&gt; ext4_journal_stop</span><br><span class="line">      |     ---&gt; inode_io_list_move_locked</span><br><span class="line">      |     ---&gt; wb_wakeup_delayed</span><br><span class="line">      ---&gt; ext4_sync_file</span><br><span class="line">        ---&gt; filemap_write_and_wait_range</span><br><span class="line">        |     ---&gt; __filemap_fdatawrite_range</span><br><span class="line">        |      ---&gt; do_writepages</span><br><span class="line">        |       ---&gt; ext4_writepages</span><br><span class="line">        |     ---&gt; filemap_fdatawait_range</span><br><span class="line">        ---&gt; jbd2_complete_transaction</span><br><span class="line">        ---&gt; blkdev_issue_flush</span><br></pre></td></tr></table></figure></p>
-<p>fs/ext4/fsync.c<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">ext4_sync_file:</span><br><span class="line">    if (journal-&gt;j_flags &amp; JBD2_BARRIER &amp;&amp;</span><br><span class="line">        !jbd2_trans_will_send_data_barrier(journal, commit_tid))</span><br><span class="line">        needs_barrier = true;</span><br><span class="line">    ret = jbd2_complete_transaction(journal, commit_tid);</span><br><span class="line">    if (needs_barrier) &#123;</span><br><span class="line">        err = blkdev_issue_flush(inode-&gt;i_sb-&gt;s_bdev, GFP_KERNEL, NULL);</span><br><span class="line">        if (!ret)</span><br><span class="line">            ret = err;</span><br></pre></td></tr></table></figure></p>
-<h3 id="块设备层"><a href="#块设备层" class="headerlink" title="块设备层"></a>块设备层</h3><p>linux-src/block/blk-flush.c<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">blkdev_issue_flush</span><br><span class="line">    ---&gt;submit_bio(WRITE_FLUSH, bio);</span><br></pre></td></tr></table></figure></p>
-<p>linux-src/include/linux/fs.h<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">#define WRITE_FLUSH  (WRITE | REQ_SYNC | REQ_NOIDLE | REQ_FLUSH)</span><br></pre></td></tr></table></figure></p>
-<p>linux-src/include/linux/blk_types.h<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">enum rq_flag_bits &#123;</span><br><span class="line">    __REQ_FUA,      /* forced unit access */</span><br><span class="line">    __REQ_FLUSH,        /* request for cache flush */</span><br></pre></td></tr></table></figure></p>
-<p>这两个标致位，会触发驱动发出刷盘命令</p>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>有以下几点需要注意，个人理解：</p>
-<ul>
-<li>O_DIRECT只是让用户态数据通过DMA直接写进磁盘，跳过Pagecache，虽然O_DIRECT已经是同步IO了，但是仍然不保证落盘。需要O_SYNC配合使用，刷新数据和元数据，</li>
-<li>由于磁盘存在cache，O_DIRECT不能保证落盘有两方面原因，1.它不保证元数据落盘。2.它不像O_SYNC那样下发“刷盘”命令，把磁盘cache的数据刷到碟片上。</li>
-<li>由于O_DIRECT已经是同步IO了，所以O_DIRECT配合O_DSYNC使用是没有什么意义的，因为元数据没有保障落盘。</li>
-<li>文件系统有个barrier参数，当磁盘没有掉电保护时，需要这个参数，这样会带“刷盘”命令到磁盘，等待磁盘cache数据写入碟片，以此来保证文件系统日志先落盘，数据后落盘。当磁盘有掉电保护时（例如企业级SSD），可以使用nobarrier参数，此时性能更好，也不会下发刷盘命令。</li>
-</ul>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
   <nav class="pagination">
-    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="page-number" href="/page/3/">3</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right"></i></a>
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><span class="space">&hellip;</span><a class="page-number" href="/page/4/">4</a><a class="extend next" rel="next" href="/page/2/"><i class="fa fa-angle-right"></i></a>
   </nav>
 
 
@@ -825,7 +845,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">9</span>
+                  <span class="site-state-item-count">10</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -847,7 +867,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">9</span>
+                  <span class="site-state-item-count">10</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>

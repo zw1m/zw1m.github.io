@@ -66,7 +66,7 @@
 
 
 
-  <meta name="keywords" content="Hexo, NexT">
+  <meta name="keywords" content="IO,Optane,SSD,">
 
 
 
@@ -77,17 +77,18 @@
 
 
 
-<meta name="description" content="个人小站。致力于为运维及研发提供准确、靠谱的运维资料和经验。">
-<meta name="keywords" content="运维、DevOPS、性能、体系、架构、x86">
-<meta property="og:type" content="website">
-<meta property="og:title" content="运维深处">
-<meta property="og:url" content="http://blog.zw1m.com/tags/IO/index.html">
+<meta name="description" content="前言与时俱进、终身学习。本文是针对公众号《企业存储技术》里面3DXPoint、Optane SSD相关文章的学习总结。文章涉及到的产品有  Optane SSD 900P Optane SSD P4800X  暂时不涉及Optane Persistent Memory（AEP）。 笔记部分 Intel已经研究PCM 45年了！3DXPoint其实就是3D的PCM。 Intel CPU的内存控制器，">
+<meta name="keywords" content="IO,Optane,SSD">
+<meta property="og:type" content="article">
+<meta property="og:title" content="3DXPoint与Optane学习笔记整理">
+<meta property="og:url" content="http://blog.zw1m.com/2019/04/3DXPoint与Optane学习笔记整理/index.html">
 <meta property="og:site_name" content="运维深处">
-<meta property="og:description" content="个人小站。致力于为运维及研发提供准确、靠谱的运维资料和经验。">
+<meta property="og:description" content="前言与时俱进、终身学习。本文是针对公众号《企业存储技术》里面3DXPoint、Optane SSD相关文章的学习总结。文章涉及到的产品有  Optane SSD 900P Optane SSD P4800X  暂时不涉及Optane Persistent Memory（AEP）。 笔记部分 Intel已经研究PCM 45年了！3DXPoint其实就是3D的PCM。 Intel CPU的内存控制器，">
 <meta property="og:locale" content="zh-Hans">
+<meta property="og:updated_time" content="2019-04-25T16:04:12.919Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="运维深处">
-<meta name="twitter:description" content="个人小站。致力于为运维及研发提供准确、靠谱的运维资料和经验。">
+<meta name="twitter:title" content="3DXPoint与Optane学习笔记整理">
+<meta name="twitter:description" content="前言与时俱进、终身学习。本文是针对公众号《企业存储技术》里面3DXPoint、Optane SSD相关文章的学习总结。文章涉及到的产品有  Optane SSD 900P Optane SSD P4800X  暂时不涉及Optane Persistent Memory（AEP）。 笔记部分 Intel已经研究PCM 45年了！3DXPoint其实就是3D的PCM。 Intel CPU的内存控制器，">
 
 
 
@@ -117,13 +118,13 @@
 
 
 
-  <link rel="canonical" href="http://blog.zw1m.com/tags/IO/">
+  <link rel="canonical" href="http://blog.zw1m.com/2019/04/3DXPoint与Optane学习笔记整理/">
 
 
 
 
 
-  <title>标签: IO | 运维深处</title>
+  <title>3DXPoint与Optane学习笔记整理 | 运维深处</title>
   
 
 
@@ -142,7 +143,7 @@
     
   
 
-  <div class="container sidebar-position-left ">
+  <div class="container sidebar-position-left page-post-detail">
     <div class="headband"></div>
 
     <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
@@ -278,208 +279,220 @@
           <div id="content" class="content">
             
 
+  <div id="posts" class="posts-expand">
+    
+
+  
+
   
   
   
-  <div class="post-block tag">
-
-    <div id="posts" class="posts-collapse">
-      <div class="collection-title">
-        <h1>IO<small>标签</small>
-        </h1>
-      </div>
-
-      
-        
 
   <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/04/3DXPoint与Optane学习笔记整理/">
 
-      <h2 class="post-title">
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Roger K">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="运维深处">
+    </span>
+
+    
+      <header class="post-header">
+
         
-            <a class="post-title-link" href="/2019/04/3DXPoint与Optane学习笔记整理/" itemprop="url">
-              
-                <span itemprop="name">3DXPoint与Optane学习笔记整理</span>
-              
-            </a>
         
-      </h2>
+          <h1 class="post-title" itemprop="name headline">3DXPoint与Optane学习笔记整理</h1>
+        
 
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated" datetime="2019-04-26T00:02:43+08:00" content="2019-04-26">
-          04-26
-        </time>
-      </div>
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-04-26T00:02:43+08:00">
+                2019-04-26
+              </time>
+            
 
-    </header>
-  </article>
+            
 
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/性能分析/" itemprop="url" rel="index">
+                    <span itemprop="name">性能分析</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
 
       
-        
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/2019/04/测试16G的玩具傲腾Optane性能/" itemprop="url">
-              
-                <span itemprop="name">测试16G的玩具傲腾Optane性能</span>
-              
-            </a>
-        
-      </h2>
-
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated" datetime="2019-04-25T11:12:47+08:00" content="2019-04-25">
-          04-25
-        </time>
-      </div>
-
-    </header>
-  </article>
-
+      
 
       
-        
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/2019/04/全链路分析数据落盘机制-文件系统层及块设备层/" itemprop="url">
-              
-                <span itemprop="name">全链路分析数据落盘机制-文件系统层及块设备层</span>
-              
-            </a>
-        
-      </h2>
-
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated" datetime="2019-04-07T17:31:08+08:00" content="2019-04-07">
-          04-07
-        </time>
-      </div>
-
-    </header>
-  </article>
-
-
-      
-        
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/2019/04/全链路分析数据落盘机制-基础知识及应用层/" itemprop="url">
-              
-                <span itemprop="name">全链路分析数据落盘机制-基础知识及应用层</span>
-              
-            </a>
-        
-      </h2>
-
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated" datetime="2019-04-06T20:41:40+08:00" content="2019-04-06">
-          04-06
-        </time>
-      </div>
-
-    </header>
-  </article>
-
-
-      
-        
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/2019/03/全链路分析数据落盘机制-跟踪sync命令/" itemprop="url">
-              
-                <span itemprop="name">全链路分析数据落盘机制-跟踪sync命令</span>
-              
-            </a>
-        
-      </h2>
-
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated" datetime="2019-03-27T10:39:06+08:00" content="2019-03-27">
-          03-27
-        </time>
-      </div>
-
-    </header>
-  </article>
-
-
-      
-        
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/2019/03/全链路分析数据落盘机制-硬件及驱动层/" itemprop="url">
-              
-                <span itemprop="name">全链路分析数据落盘机制-硬件及驱动层</span>
-              
-            </a>
-        
-      </h2>
-
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated" datetime="2019-03-27T10:30:40+08:00" content="2019-03-27">
-          03-27
-        </time>
-      </div>
-
-    </header>
-  </article>
-
-
-      
-        
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-    <header class="post-header">
-
-      <h2 class="post-title">
-        
-            <a class="post-title-link" href="/2019/03/纠正几个Linux的IO监控指标的误区/" itemprop="url">
-              
-                <span itemprop="name">纠正几个Linux的IO监控指标的误区</span>
-              
-            </a>
-        
-      </h2>
-
-      <div class="post-meta">
-        <time class="post-time" itemprop="dateCreated" datetime="2019-03-19T14:37:50+08:00" content="2019-03-19">
-          03-19
-        </time>
-      </div>
-
-    </header>
-  </article>
-
+        <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>与时俱进、终身学习。<br>本文是针对公众号《企业存储技术》里面3DXPoint、Optane SSD相关文章的学习总结。文章涉及到的产品有</p>
+<ul>
+<li>Optane SSD 900P</li>
+<li>Optane SSD P4800X</li>
+</ul>
+<p>暂时不涉及Optane Persistent Memory（AEP）。</p>
+<h3 id="笔记部分"><a href="#笔记部分" class="headerlink" title="笔记部分"></a>笔记部分</h3><ol>
+<li>Intel已经研究PCM 45年了！3DXPoint其实就是3D的PCM。</li>
+<li>Intel CPU的内存控制器，将直接支持基于PCM的DIMM内存条（Far Memory，也就是3D XPoint），并保持在每个通道上同时支持DDR DRAM（Near Memory）的能力。</li>
+<li>HDD的10ms大致代表7200转硬盘，使用NAND闪存的SAS/SATA SSD超过100µs，换成NVMe接口降低到100µs以内，3D XPoint大约在10µs左右。</li>
+<li>性能预览：不再依赖于并发/队列深度，在很低的队列深度下就能达到接近峰值性能。</li>
+<li>3D Xpoint除了非易失特性之外，主要的优点就是可以比DRAM内存做得更大，并且单位容量更便宜。</li>
+<li>保守（真实）的NAND闪存。以ONFI 2.x 接口的Micron 512Gb MLC为例，物理块大小8800KB，页面即最小I/O单位16KB，读延时115μs，页面编程即写延时1600μs（1.6ms），而块擦除需要3ms。</li>
+<li>闪存如果要重复写入需要先擦除，即P/E Cycle的过程。可以说闪存控制器和SSD厂商做了大量工作，我们才能用到实际读/写延时100μs左右的产品，至于比这个低的，我只能说DRAM缓存了。</li>
+<li>Intel SSD标称的20μs延时是顺序读写，随机访问的读/写延时为115/25μs，显然写I/O还是进入了DRAM缓存里。</li>
+<li>除了平均延迟以外，还有一个重要概念叫QoS延迟，它代表在一定百分比范围内的响应时间最大值，反映了延时的稳定性，非常影响用户体验。例如QoS延时举例，4KB（KiB，4096字节）块大小、队列深度（QD）16、99.999%的读/写IO延时不超过150/200μs。</li>
+<li>Intel P3700在99.99% QoS范围、QD=1的4KB随机读延时为4ms，是Optane P4800X的60μs的接近70倍，而且后者的QoS等级还要更高。所以Intel以前强调3D XPoint介质的低队列深度读性能优势不是没有道理的。</li>
+<li>内存的基本操作单位是64bytes，现在发布的Optane SSD也像NAND闪存那样是块级设备，本身不能以字节方式寻址（未来还会有DIMM形态的3D XPoint）。Intel Memory Drive Technology要解决的就是这个问题，而该软件技术来自于一家合作伙伴ScaleMP。</li>
+<li>3D XPoint Memory可能不是普通的相变（结晶/非结晶态转换）或者电阻式存储介质，不像闪存要有一个P/E Cycle，即改写数据时不用先进行擦除操作了。这样也就不需要垃圾回收（GC），理论上编程的长度单位可以不受诸如页面、块之类的限制。那我为啥还给了个“写放大”的评价</li>
+<li>由于3D XPoint能就地改写，不像NAND闪存SSD那样需要OP来做垃圾回收，那么就是用于ECC、Firmware和其它维护操作。</li>
+<li>维护操作，显然还是需要有的。虽然不用GC了，但磨损平衡还要做，包括数据完整性扫描、搬移这些后台操作应该会有，以及像NAND闪存那样预留一些空间替换损坏的存储单元。</li>
+<li>Optane P4800X上没有单独的缓存芯片，也没看到有大容量电容。而据了解它实际上仍然具备Power Loss Imminent（PLI）技术，需要保护的临时buffer数据量很小而已。元数据映射表不再放在单独的DRAM中，因为3D XPoint Memory本身就是一种非易失性内存介质，而且它的速度足够快。</li>
+<li>Optane P4800X当队列深度=1延时小于10μs，QD=16也仅上升到20μs。可以看出PCIe接口在这里的限制，如果未来做成DIMM形态插在内存通道上，与闪存的差距预计还会加大。</li>
+<li>OptaneP4800X 375GB可能是7通道设计。根据QD=16基本达到峰值的测试数据来看，3D XPoint Memory的实际并发效果比NAND闪存要好。</li>
+<li>P3700的随机写一开始可达40万IOPS，当OP（超量分配）空间用满后台触发GC（垃圾回收）滑落到10万出头然后逐渐恢复到17万稳定值。</li>
+<li>下一代服务器对NVMe SSD数量支持的增加，未来高性能的存储应用负载，最终分摊到每节点上单一SSD的IO队列深度仍然不见得会很高。以P3700为代表的NAND闪存盘，许多应用中其最大IOPS可能无法充分发挥。Optane从根本上克服了NAND Flash的天生缺陷，利用更低和更稳定的时延，即便在很低的并发度下也能达到系统吞吐量的顶峰，天生适用于OLTP类业务。</li>
+<li>使用新型3D XPoint Memory非易失存储器介质的OptaneP4800X，相对于传统NAND闪存SSD价格不菲。以目前的情况，我们认为它更适合放置数据库日志，或者用于高速存储系统（如全闪存阵列/Server SAN）的大容量缓存。</li>
+<li>与之前Oracle测试中的情况类似，MySQL SysBench也是在数据库Cache命中率调低后，才能将SSD存储的差距放大。如今瓶颈更多在于CPU和软件本身，“软件的适配还跟不上硬件的发展”。</li>
+<li>SPDK在低并发/队列深度下的优势相当明显。无论IOPS还是延时，当队列深度1-4时SPDK的领先都在一倍以上，此时OptaneP4800X最低测出了6.49μs随机读延时的表现。</li>
+<li>当队列深度达到16之后，测试瓶颈开始显现在SSD硬件本身上面，SPDK和内核态没有明显差别了。也就是说，polling轮询相对于传统的中断I/O模式，3D XPoint Memory在低队列深度下的性能优势能够更好地发挥出来。</li>
+<li>随机写测试的情况类似，Optane P4800X在队列深度=1时延迟低至8μs。写和读有一点不同的是，当并发/队列深度达到16或以上，SPDK下的IOPS超过55万，比官方标称的50万还要高。与之对应的是，这时延迟也要比内核态低。</li>
+<li>Intel P3700随机读在SPDK下也有一些提高，但远不及Optane P4800X明显。究其原因，应该是传统NAND闪存SSD在低队列深度下的自身瓶颈所致。</li>
+<li>随机写，由于P3700上有DRAM Cache的帮助，SPDK带来的优势比读大了许多。同时也出现了和Optane P4800X类似的情况——最大写IOPS超出规格标称值，达到20.8万。</li>
+<li>性能和资源利用是一回事，而SPDK在应用中的普及则是另外一回事。毕竟传统文件系统、应用都是跟Kernel块设备打交道，要牵涉到开发习惯等方面的变化。</li>
+<li>随机写QoS延时，由于是单队列，绝大多数I/O都能在SSD的写缓存中先合并，所以如果只看平均延时，FIO测试的结果会看出两款卡相差不多。而到了高等级QoS特别是99.999%时，Optane才显出10倍以上的优势。</li>
+<li>高并发/QD下的的随机写QoS延时，可以说是Optane P4800X最擅长的地方。3D XPoint Memory介质可以直接写入，没有NAND闪存P/E Cycle（编程/擦除周期）产生的写放大，也不需要垃圾回收。所以我们看到P4800X的QD=16 99.999%随机写延时标称值为200μs，我实测1小时得到141μs，而P3700则高达8ms了。</li>
+<li>我们有时会看到一些消费级SSD的写IOPS指标，比不少企业级SSD还要高。这里面有容易被忽视的一点——闪存SSD如果限制测试LBA范围，其随机写性能通常比全盘测试高许多。于是在一些盘的规格资料小字中就可能看到“8GB Span”的备注。由于3D XPoint Memory属于类似PRAM相变内存的介质，不需要GC垃圾回收，所以8GB Span和100% Span性能完全一致。</li>
+</ol>
+<h3 id="应用程序角度"><a href="#应用程序角度" class="headerlink" title="应用程序角度"></a>应用程序角度</h3><ol>
+<li>对于单线程的同步I/O的应用，高时延单/多通道链路带来的是反应慢、吞吐量低的极差体验。也就是说，当你打开一个网页，不但浏览器状态栏半天才会从“正在连接”变到“正在接收数据”，而且“正在接收数据”这个状态也会持续很长时间，网页上的内容慢腾腾的逐步显示出来。</li>
+<li>对于多个或者多线程同步I/O应用并发访问场景，高时延单通道链路带来的是更慢上加慢让人无法忍受甚至最终让应用I/O超时引发宕机的灾难性体验。因为多线程会争抢唯一的一个通道，导致整体访问时延中不得不增加I/O的等待时延这个分量，也就是等待其他线程让出通道，自己被调度上通道。</li>
+<li>对于多个或者多线程同步I/O应用并发访问场景，高时延多通道链路带来的是反应慢、吞吐量低的极差体验。但是只要线程数量没有超过并发通道数，并且可以保证每个线程独占一个通道，那么多个线程并发之后，每个线程的体验是均等的，并不会像#2情况那样严重。</li>
+<li>对于单线程异步I/O应用，高时延单通道链路，体验与#2一致。</li>
+<li>对于单线程异步I/O应用，高时延多通道链路，体验较好，因为其可以利用其其他多个通道，从而可以提升整体吞吐量。</li>
+<li>时延越低，越有利于单线程同步I/O应用的性能，并发度越高，越有利于异步I/O应用。</li>
+<li>OLTP业务对IO的要求是时延和吞吐量兼具，而OLAP场景一般只要求吞吐量。同时，OLTP类业务发出同步模式的IO的比例远高于OLAP类业务，因为实时性场景下，很多时候必须一步一步的来，比如点击购买按钮，付款后，才能走下一步，没有任何电商为了实现批量下发IO获得高吞吐量而在你点击购买按钮之后不等你付款就直接让商家打包包裹去了。同步IO是最难优化的IO场景。一般都是OLTP类业务会遇到性能问题，就是因为其对时延有要求，自己还时不时就发送同步IO。</li>
+<li>OLTP类应用对时延和并发度都要求比较高，但是对时延更加敏感。OLTP的业务特征决定了其I/O中具有大量比例的同步I/O，而且有些批量异步I/O整体上可能取决于某个同步I/O，也就是只有某个I/O执行完毕，后续才会发出批量异步I/O，这种关联关系隐含的更加深，不容易被察觉。</li>
+</ol>
 
       
     </div>
+    
+    
+    
 
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/IO/" rel="tag"># IO</a>
+          
+            <a href="/tags/Optane/" rel="tag"># Optane</a>
+          
+            <a href="/tags/SSD/" rel="tag"># SSD</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2019/04/测试16G的玩具傲腾Optane性能/" rel="next" title="测试16G的玩具傲腾Optane性能">
+                <i class="fa fa-chevron-left"></i> 测试16G的玩具傲腾Optane性能
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
   </div>
   
   
   
+  </article>
 
-  
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
 
 
           </div>
@@ -487,6 +500,14 @@
 
 
           
+
+  
+    <div id="gitalk-container">
+    </div>
+
+  
+
+
 
 
         </div>
@@ -508,8 +529,17 @@
       
 
       
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
 
-      <section class="site-overview-wrap sidebar-panel sidebar-panel-active">
+      <section class="site-overview-wrap sidebar-panel">
         <div class="site-overview">
           <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
             
@@ -585,6 +615,22 @@
         </div>
       </section>
 
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#笔记部分"><span class="nav-number">2.</span> <span class="nav-text">笔记部分</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#应用程序角度"><span class="nav-number">3.</span> <span class="nav-text">应用程序角度</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
       
 
       
@@ -719,6 +765,10 @@
 
 
   
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.4"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.4"></script>
+
+
 
   
 
@@ -759,6 +809,22 @@
 
 
 
+
+  <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+  <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+  <script src="https://cdn.bootcss.com/blueimp-md5/2.10.0/js/md5.min.js"></script>
+   <script type="text/javascript">
+        var gitalk = new Gitalk({
+          clientID: 'd238ee13d183adcedd5f',
+          clientSecret: '2cf9d6d756f82d8d22bcca81a76d27f310b6c2ae',
+          repo: 'zw1m.github.io',
+          owner: 'zw1m',
+          admin: ['zw1m'],
+          id: md5(window.location.pathname),
+          distractionFreeMode: 'true'
+        })
+        gitalk.render('gitalk-container')
+       </script>
 
 
 
