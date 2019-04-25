@@ -66,7 +66,7 @@
 
 
 
-  <meta name="keywords" content="IO,刷盘,">
+  <meta name="keywords" content="IO,Optane,tkperf,">
 
 
 
@@ -77,18 +77,18 @@
 
 
 
-<meta name="description" content="前言本文介绍一些Linux系统基础知识，用于更好地理解内核和IO链路。此外，本文也介绍一些应用层来保障数据落盘的机制，例如fsync，fdatasync等。 库函数和系统调用介绍 库函数是为了方便人们编写应用程序。库函数（library function），是由用户或组织自己开发的，具有一定功能的函数集合，一般具有较好平台移植性，通过库文件（静态库或动态库）向程序员提供功能性调用。程序员无需关心平">
-<meta name="keywords" content="IO,刷盘">
+<meta name="description" content="背景逛淘宝发现全新拆机件Optane Memory 16G非常便宜，只要50来块钱。 好像是联想笔记本的拆机件，原本出厂是在Windows系统里作为HDD cache使用。我猜是因为它占用了一个M.2的的插槽，很多用户觉得鸡肋，于是扔了Optane Memory 16G，换成大容量的M.2 NVMe SSD，所以有大量的16G拆机件流入了淘宝。 在存储分层中，NVM是介于内存和SSD之间的一层，填">
+<meta name="keywords" content="IO,Optane,tkperf">
 <meta property="og:type" content="article">
-<meta property="og:title" content="全链路分析数据落盘机制-基础知识及应用层">
-<meta property="og:url" content="http://blog.zw1m.com/2019/04/全链路分析数据落盘机制-基础知识及应用层/index.html">
+<meta property="og:title" content="测试16G的玩具傲腾Optane性能">
+<meta property="og:url" content="http://blog.zw1m.com/2019/04/测试16G的玩具傲腾Optane性能/index.html">
 <meta property="og:site_name" content="运维深处">
-<meta property="og:description" content="前言本文介绍一些Linux系统基础知识，用于更好地理解内核和IO链路。此外，本文也介绍一些应用层来保障数据落盘的机制，例如fsync，fdatasync等。 库函数和系统调用介绍 库函数是为了方便人们编写应用程序。库函数（library function），是由用户或组织自己开发的，具有一定功能的函数集合，一般具有较好平台移植性，通过库文件（静态库或动态库）向程序员提供功能性调用。程序员无需关心平">
+<meta property="og:description" content="背景逛淘宝发现全新拆机件Optane Memory 16G非常便宜，只要50来块钱。 好像是联想笔记本的拆机件，原本出厂是在Windows系统里作为HDD cache使用。我猜是因为它占用了一个M.2的的插槽，很多用户觉得鸡肋，于是扔了Optane Memory 16G，换成大容量的M.2 NVMe SSD，所以有大量的16G拆机件流入了淘宝。 在存储分层中，NVM是介于内存和SSD之间的一层，填">
 <meta property="og:locale" content="zh-Hans">
-<meta property="og:updated_time" content="2019-04-06T12:42:54.305Z">
+<meta property="og:updated_time" content="2019-04-25T03:14:38.478Z">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="全链路分析数据落盘机制-基础知识及应用层">
-<meta name="twitter:description" content="前言本文介绍一些Linux系统基础知识，用于更好地理解内核和IO链路。此外，本文也介绍一些应用层来保障数据落盘的机制，例如fsync，fdatasync等。 库函数和系统调用介绍 库函数是为了方便人们编写应用程序。库函数（library function），是由用户或组织自己开发的，具有一定功能的函数集合，一般具有较好平台移植性，通过库文件（静态库或动态库）向程序员提供功能性调用。程序员无需关心平">
+<meta name="twitter:title" content="测试16G的玩具傲腾Optane性能">
+<meta name="twitter:description" content="背景逛淘宝发现全新拆机件Optane Memory 16G非常便宜，只要50来块钱。 好像是联想笔记本的拆机件，原本出厂是在Windows系统里作为HDD cache使用。我猜是因为它占用了一个M.2的的插槽，很多用户觉得鸡肋，于是扔了Optane Memory 16G，换成大容量的M.2 NVMe SSD，所以有大量的16G拆机件流入了淘宝。 在存储分层中，NVM是介于内存和SSD之间的一层，填">
 
 
 
@@ -118,13 +118,13 @@
 
 
 
-  <link rel="canonical" href="http://blog.zw1m.com/2019/04/全链路分析数据落盘机制-基础知识及应用层/">
+  <link rel="canonical" href="http://blog.zw1m.com/2019/04/测试16G的玩具傲腾Optane性能/">
 
 
 
 
 
-  <title>全链路分析数据落盘机制-基础知识及应用层 | 运维深处</title>
+  <title>测试16G的玩具傲腾Optane性能 | 运维深处</title>
   
 
 
@@ -293,7 +293,7 @@
   
   
   <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/04/全链路分析数据落盘机制-基础知识及应用层/">
+    <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/04/测试16G的玩具傲腾Optane性能/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="name" content="Roger K">
@@ -310,7 +310,7 @@
 
         
         
-          <h1 class="post-title" itemprop="name headline">全链路分析数据落盘机制-基础知识及应用层</h1>
+          <h1 class="post-title" itemprop="name headline">测试16G的玩具傲腾Optane性能</h1>
         
 
         <div class="post-meta">
@@ -322,8 +322,8 @@
               
                 <span class="post-meta-item-text">发表于</span>
               
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-04-06T20:41:40+08:00">
-                2019-04-06
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-04-25T11:12:47+08:00">
+                2019-04-25
               </time>
             
 
@@ -345,8 +345,8 @@
               
               
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/体系结构/" itemprop="url" rel="index">
-                    <span itemprop="name">体系结构</span>
+                  <a href="/categories/性能分析/" itemprop="url" rel="index">
+                    <span itemprop="name">性能分析</span>
                   </a>
                 </span>
 
@@ -382,65 +382,37 @@
       
 
       
-        <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>本文介绍一些Linux系统基础知识，用于更好地理解内核和IO链路。此外，本文也介绍一些应用层来保障数据落盘的机制，例如fsync，fdatasync等。</p>
-<h3 id="库函数和系统调用"><a href="#库函数和系统调用" class="headerlink" title="库函数和系统调用"></a>库函数和系统调用</h3><h4 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h4><ul>
-<li><p>库函数是为了方便人们编写应用程序。<br>库函数（library function），是由用户或组织自己开发的，具有一定功能的函数集合，一般具有较好平台移植性，通过库文件（静态库或动态库）向程序员提供功能性调用。程序员无需关心平台差异，由库来屏蔽平台差异性。</p>
-</li>
-<li><p>系统调用是为了方便应用使用操作系统的接口。<br>系统调用（system call），指运行在用户空间的应用程序向操作系统内核请求某些服务的调用过程。 系统调用提供了用户程序与操作系统之间的接口。一般来说，系统调用都在内核态执行。由于系统调用不考虑平台差异性，由内核直接提供，因而移植性较差（几乎无移植性）。</p>
-</li>
-<li><p>常见库函数<br>printf，scanf，fopen，fclose，fgetc，fgets，fprintf，fsacnf，fputc，calloc，free，malloc，realloc，strcat，strchr，strcmp，strcpy，strlen，strstr等，需要包含stdio.h，string.h，alloc.h，stdlib.h等头文件。</p>
-</li>
-<li><p>常见系统调用<br>open, close, read, write, ioctl，fork，clone，exit，getpid，access，chdir，chmod，stat，brk，mmap等，需要包含unistd.h等头文件。</p>
-</li>
-</ul>
-<h4 id="区别"><a href="#区别" class="headerlink" title="区别"></a>区别</h4><ul>
-<li>所有 C 函数库是相同的，而各个操作系统的系统调用是不同的。</li>
-<li>函数库调用是调用函数库中的一个程序，而系统调用是调用系统内核的服务。</li>
-<li>函数库调用是与用户程序相联系，而系统调用是操作系统的一个进入点</li>
-<li>函数库调用是在用户地址空间执行，而系统调用是在内核地址空间执行</li>
-<li>函数库调用的运行时间属于「用户」时间，而系统调用的运行时间属于「系统」时间</li>
-<li>函数库调用属于过程调用，开销较小，而系统调用需要切换到内核上下文环境然后切换回来，开销较大</li>
-<li>在C函数库libc中大约 300 个程序，在 UNIX 中大约有 90 个系统调用</li>
-<li>函数库典型的 C 函数：system, fprintf, malloc，而典型的系统调用：chdir, fork, write, brk</li>
-</ul>
-<h4 id="查询"><a href="#查询" class="headerlink" title="查询"></a>查询</h4><p>系统调用属于man的第二部分，库函数属于man的第三部分。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">man man</span><br><span class="line">2   System calls (functions provided by the kernel)</span><br><span class="line">3   Library calls (functions within program libraries)</span><br><span class="line">man 2 open</span><br></pre></td></tr></table></figure></p>
+        <h3 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h3><p>逛淘宝发现全新拆机件Optane Memory 16G非常便宜，只要50来块钱。</p>
+<p>好像是联想笔记本的拆机件，原本出厂是在Windows系统里作为HDD cache使用。我猜是因为它占用了一个M.2的的插槽，很多用户觉得鸡肋，于是扔了Optane Memory 16G，换成大容量的M.2 NVMe SSD，所以有大量的16G拆机件流入了淘宝。</p>
+<p>在存储分层中，NVM是介于内存和SSD之间的一层，填补内存和SSD的延迟鸿沟。Optane Memory使用3D XPoint存储介质，它作为NVM的一种，据悉可以在低并发下达到很高的iops，且延时极低。企业级的Optane SSD非常昂贵，单位GB成本是SSD的五倍。</p>
+<p>比较好奇，还没有玩过3D XPoint，所以搞两个来玩玩。这个16G的基本上是个玩具，所以随便测测，仅用于探索一些3D XPoint介质的特性。</p>
+<h3 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h3><p>下面是我的台式机环境：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R4A-srv ~]# perl hwconfig </span><br><span class="line">hwconfig: warning: cpu0/cpufreq/scaling_governor should be &apos;ondemand&apos;, not &apos;powersave&apos;; see http://tiny.corp.hwconfig.com/xNR1cs</span><br><span class="line">Summary:	ASRock Z370M-ITX/ac, 1 x Core i5-8400 2.80GHz, 15.3GB / 16GB 3000MT/s DDR4</span><br><span class="line">System:		ASRock Z370M-ITX/ac</span><br><span class="line">Processors:	1 x Core i5-8400 2.80GHz 100MHz FSB (6 cores)</span><br><span class="line">Memory:		15.3GB / 16GB 3000MT/s DDR4 == 2 x 8GB</span><br><span class="line">Disk:		sda (scsi1): 100GB (11%) JBOD == 1 x 100GB INTEL-SSDSA2BZ100G3</span><br><span class="line">Disk:		sdb: 100GB JBOD == 1 x 100GB INTEL-SSDSA2BZ100G3</span><br><span class="line">Disk-Control:	ahci0: Intel 200 Series PCH SATA controller [AHCI mode]</span><br><span class="line">Network:	00:1f.6 (e1000e0): Intel Ethernet Connection (2) I219-V</span><br><span class="line">Network:	02:00.0 (igb0): Intel I211 Gigabit</span><br><span class="line">Network:	03:00.0 (iwlwifi0): Intel Dual Band Wireless-AC 3168NGW [Stone Peak]</span><br><span class="line">OS:		Fedora 30 (Thirty), Linux 5.0.7-300.fc30.x86_64 x86_64, 64-bit</span><br><span class="line">BIOS:		AMI P1.50 11/16/2017</span><br><span class="line">Hostname:	MiWiFi-R4A-srv</span><br></pre></td></tr></table></figure></p>
+<p>nvme0n1就是Optane Memory 16G，在Linux里直接使用nvme驱动识别成为了块设备。这和其它的NVME SSD没有什么不同。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R4A-srv ~]# nvme list</span><br><span class="line">Node             SN                   Model                                    Namespace Usage                      Format           FW Rev  </span><br><span class="line">---------------- -------------------- ---------------------------------------- --------- -------------------------- ---------------- --------</span><br><span class="line">/dev/nvme0n1     PHBT82620BLV016N     INTEL MEMPEK1J016GAL                     1          14.40  GB /  14.40  GB    512   B +  0 B   K4110420</span><br></pre></td></tr></table></figure></p>
+<h3 id="性能测试"><a href="#性能测试" class="headerlink" title="性能测试"></a>性能测试</h3><p>在以前，我们会自己写shell脚本调用fio来测试SSD的各维度的性能。<br>这次我们直接用现成的工具好了。<br>TKperf可以自己生成图形报告，非常好用，网址如下：</p>
 <ul>
-<li>库函数：man 3 fopen</li>
-<li>系统调用：man 2 open</li>
+<li><a href="https://www.thomas-krenn.com/de/wiki/TKperf" target="_blank" rel="noopener">https://www.thomas-krenn.com/de/wiki/TKperf</a></li>
+<li><a href="https://github.com/thomas-krenn/TKperf" target="_blank" rel="noopener">https://github.com/thomas-krenn/TKperf</a><br>执行的时候，会调用format命令，在我的系统里，会卡住。可能是optane这个SSD对format指令兼容性问题。这条命令是擦除所有数据，不擦除也是一样测试，所以我加了个echo，取消这条命令执行，直接改成打印。<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">nvme format /dev/nvme0n1 -s=<span class="number">1</span> -l=<span class="number">0</span></span><br><span class="line"></span><br><span class="line">TKperf/build/lib/perfTest/Devices.py:</span><br><span class="line">out = subprocess.Popen([<span class="string">'echo'</span>, <span class="string">'nvme'</span>, <span class="string">'format'</span>, self.getDevPath(), <span class="string">'-s=1'</span>, lbaf_opt],stdout=subprocess.PIPE,stderr=subprocess.PIPE)</span><br></pre></td></tr></table></figure>
+</li>
 </ul>
-<p>以c语言库函数举例，glibc库函数头文件属于glibc-headers包：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# rpm -qf /usr/include/stdio.h </span><br><span class="line">glibc-headers-2.17-260.el7_6.3.x86_64</span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# rpm -qf /usr/include/unistd.h</span><br><span class="line">glibc-headers-2.17-260.el7_6.3.x86_64</span><br></pre></td></tr></table></figure></p>
-<p>系统调用头文件属于kernel-headers包：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# rpm -qf /usr/include/asm/unistd_64.h </span><br><span class="line">kernel-headers-3.10.0-957.5.1.el7.x86_64</span><br></pre></td></tr></table></figure></p>
-<p>对应跟踪工具，ltrace和strace<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ltrace - A library call tracer</span><br><span class="line">strace - trace system calls and signals</span><br></pre></td></tr></table></figure></p>
-<h3 id="应用层的刷盘"><a href="#应用层的刷盘" class="headerlink" title="应用层的刷盘"></a>应用层的刷盘</h3><h4 id="python"><a href="#python" class="headerlink" title="python"></a>python</h4><p>python3.3以上使用os.sync。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">os.sync()</span><br><span class="line">Force write of everything to disk.</span><br><span class="line">Availability: Unix.</span><br><span class="line">New in version 3.3.</span><br></pre></td></tr></table></figure></p>
-<p>python2需要引用外部。<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">import</span> ctypes</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>libc = ctypes.CDLL(<span class="string">"libc.so.6"</span>)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>libc.sync()</span><br><span class="line"><span class="number">0</span></span><br></pre></td></tr></table></figure></p>
-<h4 id="Java"><a href="#Java" class="headerlink" title="Java"></a>Java</h4><p>JDK中有三种方式可以强制文件数据落盘：</p>
+<p>现在开始执行测试，这里是1个numjobs，1个iodepth的场景，TKperf的优点在于它会自动给你设置不同的blocksize还有读写比例。所以我们覆盖不同的场景，只需要调整numjobs和iodepth即可：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nohup tkperf ssd optane16g /dev/nvme0n1 -ft -nj 1 -iod 1 -rfb -i nvme 1&gt;runTest.out 2&gt;runTest.err &amp;</span><br></pre></td></tr></table></figure></p>
+<p>执行如下两条命令即可生产报告：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">tkperf ssd optane16g none -xml</span><br><span class="line">rst2pdf optane16g.rst optane16g.pdf</span><br></pre></td></tr></table></figure></p>
+<h3 id="测试结果"><a href="#测试结果" class="headerlink" title="测试结果"></a>测试结果</h3><p>具体的测试结果，查看tkperf的pdf报告即可。这里我们只分析optane最大的几个特点：</p>
 <ul>
-<li><p>调用 FileDescriptor#sync函数</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">调用IO_Sync来执行数据同步</span><br><span class="line">IO_Sync在UNIX系统上的定义就是 fsync</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>调用 FileChannel#force函数</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">FileChannel#force 调用 FileDispatcher#force</span><br><span class="line">通过 metaData 参数来区分调用 fsync 和 fdatasync</span><br></pre></td></tr></table></figure>
-</li>
-<li><p>使用 RandomAccessFile 以 rws 或者 rwd 模式打开文件</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">“rws” 还要求对文件的内容或元数据的每个更新都同步写入到底层存储设备。</span><br><span class="line">“rwd” 还要求对文件内容的每个更新都同步写入到底层存储设备。</span><br><span class="line">rws 模式会在 open 文件时传入 O_SYNC 标志位。 </span><br><span class="line">rwd 模式会在 open 文件时传入 O_DSYNC 标志位。</span><br></pre></td></tr></table></figure>
-</li>
+<li>psync单并发下，4k随机读的性能是10us。普通的nvme ssd大约是60us。</li>
+<li>psync单并发下，512b随机读性能是5us，延时小于4k，说明介质操作的粒度更低。</li>
+<li>作为一个单颗粒封装，只有16G的SSD，极限能达到140000的iops，150MB/s写，600MB/s的读。任何16G的nand介质SSD绝对达不到这个水准。</li>
+<li>optane没有DRAM cache，不需要超级电容来做掉电保护。</li>
 </ul>
-<h4 id="C语言"><a href="#C语言" class="headerlink" title="C语言"></a>C语言</h4><ul>
-<li>UNIX系统提供了三个系统调用来执行刷新内核缓冲区： sync ， fsync ， fdatasync 。</li>
-</ul>
-<ol>
-<li>sync函数将所有修改过的块缓冲区落盘再返回。</li>
-<li>fsync对指定文件生效，传输内核缓冲区中这个文件的数据落盘再返回。包含数据与文件系统元数据。</li>
-<li>fdatasync仅刷新数据，不刷新文件系统元数据。</li>
-</ol>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>学习存储测试相关知识，最好的材料就是SNIA组织的文档了。</p>
 <ul>
-<li>除了上面三个系统调用， open 系统调用在打开文件时，可以设置和同步相关的标志位： O_SYNC 和 O_DSYNC 。</li>
+<li><a href="https://www.snia.org/forums/sssi/knowledge/articles-presentations" target="_blank" rel="noopener">https://www.snia.org/forums/sssi/knowledge/articles-presentations</a> </li>
 </ul>
-<ol>
-<li>设置 O_SYNC 的效果相当于是每次 write 后自动调用 fsync 。</li>
-<li>设置 O_DSYNC 的效果相当于是每次 write 后自动调用 fdatasync 。</li>
-</ol>
-<h4 id="总结："><a href="#总结：" class="headerlink" title="总结："></a>总结：</h4><p>从Python和Java可以看出来，这些高级语言，为了保证数据落盘，绕来绕去都回到C语言库的fsync和fdatasync。<br>接下来的文章，我们在文件系统层和块设备层进一步分析。</p>
+<p>PTS是SNIA组织的测试标准，里面介绍了SSD测试的一般用例。当你需要为公司引入SSD部件时，参考这个文档的测试用例项。</p>
+<ul>
+<li><a href="http://www.snia.org/tech_activities/standards/curr_standards/pts" target="_blank" rel="noopener">http://www.snia.org/tech_activities/standards/curr_standards/pts</a> </li>
+<li><a href="https://www.snia.org/sites/default/files/technical_work/PTS/SSS_PTS_2.0.1.pdf" target="_blank" rel="noopener">https://www.snia.org/sites/default/files/technical_work/PTS/SSS_PTS_2.0.1.pdf</a></li>
+</ul>
+<p>作为只有16G的optane玩具，IOPS并发性能和10us的4k读延时让人印象深刻。后面有机会再玩正儿八经的Intel Optane DC SSD。</p>
 
       
     </div>
@@ -460,7 +432,9 @@
           
             <a href="/tags/IO/" rel="tag"># IO</a>
           
-            <a href="/tags/刷盘/" rel="tag"># 刷盘</a>
+            <a href="/tags/Optane/" rel="tag"># Optane</a>
+          
+            <a href="/tags/tkperf/" rel="tag"># tkperf</a>
           
         </div>
       
@@ -473,8 +447,8 @@
         <div class="post-nav">
           <div class="post-nav-next post-nav-item">
             
-              <a href="/2019/04/Linux性能优化实战笔记-CPU篇/" rel="next" title="Linux性能优化实战笔记-CPU篇">
-                <i class="fa fa-chevron-left"></i> Linux性能优化实战笔记-CPU篇
+              <a href="/2019/04/CPU的缓存失效和分支预测的例子/" rel="next" title="CPU的缓存失效和分支预测的例子">
+                <i class="fa fa-chevron-left"></i> CPU的缓存失效和分支预测的例子
               </a>
             
           </div>
@@ -482,10 +456,6 @@
           <span class="post-nav-divider"></span>
 
           <div class="post-nav-prev post-nav-item">
-            
-              <a href="/2019/04/全链路分析数据落盘机制-文件系统层及块设备层/" rel="prev" title="全链路分析数据落盘机制-文件系统层及块设备层">
-                全链路分析数据落盘机制-文件系统层及块设备层 <i class="fa fa-chevron-right"></i>
-              </a>
             
           </div>
         </div>
@@ -638,7 +608,7 @@
             
 
             
-              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#前言"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#库函数和系统调用"><span class="nav-number">2.</span> <span class="nav-text">库函数和系统调用</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#介绍"><span class="nav-number">2.1.</span> <span class="nav-text">介绍</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#区别"><span class="nav-number">2.2.</span> <span class="nav-text">区别</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#查询"><span class="nav-number">2.3.</span> <span class="nav-text">查询</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#应用层的刷盘"><span class="nav-number">3.</span> <span class="nav-text">应用层的刷盘</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#python"><span class="nav-number">3.1.</span> <span class="nav-text">python</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#Java"><span class="nav-number">3.2.</span> <span class="nav-text">Java</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#C语言"><span class="nav-number">3.3.</span> <span class="nav-text">C语言</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#总结："><span class="nav-number">3.4.</span> <span class="nav-text">总结：</span></a></li></ol></li></ol></div>
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#背景"><span class="nav-number">1.</span> <span class="nav-text">背景</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#环境"><span class="nav-number">2.</span> <span class="nav-text">环境</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#性能测试"><span class="nav-number">3.</span> <span class="nav-text">性能测试</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#测试结果"><span class="nav-number">4.</span> <span class="nav-text">测试结果</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#总结"><span class="nav-number">5.</span> <span class="nav-text">总结</span></a></li></ol></div>
             
 
           </div>

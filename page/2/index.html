@@ -293,6 +293,206 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/04/全链路分析数据落盘机制-基础知识及应用层/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Roger K">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="运维深处">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/04/全链路分析数据落盘机制-基础知识及应用层/" itemprop="url">全链路分析数据落盘机制-基础知识及应用层</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-04-06T20:41:40+08:00">
+                2019-04-06
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/体系结构/" itemprop="url" rel="index">
+                    <span itemprop="name">体系结构</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>本文介绍一些Linux系统基础知识，用于更好地理解内核和IO链路。此外，本文也介绍一些应用层来保障数据落盘的机制，例如fsync，fdatasync等。</p>
+<h3 id="库函数和系统调用"><a href="#库函数和系统调用" class="headerlink" title="库函数和系统调用"></a>库函数和系统调用</h3><h4 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h4><ul>
+<li><p>库函数是为了方便人们编写应用程序。<br>库函数（library function），是由用户或组织自己开发的，具有一定功能的函数集合，一般具有较好平台移植性，通过库文件（静态库或动态库）向程序员提供功能性调用。程序员无需关心平台差异，由库来屏蔽平台差异性。</p>
+</li>
+<li><p>系统调用是为了方便应用使用操作系统的接口。<br>系统调用（system call），指运行在用户空间的应用程序向操作系统内核请求某些服务的调用过程。 系统调用提供了用户程序与操作系统之间的接口。一般来说，系统调用都在内核态执行。由于系统调用不考虑平台差异性，由内核直接提供，因而移植性较差（几乎无移植性）。</p>
+</li>
+<li><p>常见库函数<br>printf，scanf，fopen，fclose，fgetc，fgets，fprintf，fsacnf，fputc，calloc，free，malloc，realloc，strcat，strchr，strcmp，strcpy，strlen，strstr等，需要包含stdio.h，string.h，alloc.h，stdlib.h等头文件。</p>
+</li>
+<li><p>常见系统调用<br>open, close, read, write, ioctl，fork，clone，exit，getpid，access，chdir，chmod，stat，brk，mmap等，需要包含unistd.h等头文件。</p>
+</li>
+</ul>
+<h4 id="区别"><a href="#区别" class="headerlink" title="区别"></a>区别</h4><ul>
+<li>所有 C 函数库是相同的，而各个操作系统的系统调用是不同的。</li>
+<li>函数库调用是调用函数库中的一个程序，而系统调用是调用系统内核的服务。</li>
+<li>函数库调用是与用户程序相联系，而系统调用是操作系统的一个进入点</li>
+<li>函数库调用是在用户地址空间执行，而系统调用是在内核地址空间执行</li>
+<li>函数库调用的运行时间属于「用户」时间，而系统调用的运行时间属于「系统」时间</li>
+<li>函数库调用属于过程调用，开销较小，而系统调用需要切换到内核上下文环境然后切换回来，开销较大</li>
+<li>在C函数库libc中大约 300 个程序，在 UNIX 中大约有 90 个系统调用</li>
+<li>函数库典型的 C 函数：system, fprintf, malloc，而典型的系统调用：chdir, fork, write, brk</li>
+</ul>
+<h4 id="查询"><a href="#查询" class="headerlink" title="查询"></a>查询</h4><p>系统调用属于man的第二部分，库函数属于man的第三部分。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">man man</span><br><span class="line">2   System calls (functions provided by the kernel)</span><br><span class="line">3   Library calls (functions within program libraries)</span><br><span class="line">man 2 open</span><br></pre></td></tr></table></figure></p>
+<ul>
+<li>库函数：man 3 fopen</li>
+<li>系统调用：man 2 open</li>
+</ul>
+<p>以c语言库函数举例，glibc库函数头文件属于glibc-headers包：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# rpm -qf /usr/include/stdio.h </span><br><span class="line">glibc-headers-2.17-260.el7_6.3.x86_64</span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# rpm -qf /usr/include/unistd.h</span><br><span class="line">glibc-headers-2.17-260.el7_6.3.x86_64</span><br></pre></td></tr></table></figure></p>
+<p>系统调用头文件属于kernel-headers包：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# rpm -qf /usr/include/asm/unistd_64.h </span><br><span class="line">kernel-headers-3.10.0-957.5.1.el7.x86_64</span><br></pre></td></tr></table></figure></p>
+<p>对应跟踪工具，ltrace和strace<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ltrace - A library call tracer</span><br><span class="line">strace - trace system calls and signals</span><br></pre></td></tr></table></figure></p>
+<h3 id="应用层的刷盘"><a href="#应用层的刷盘" class="headerlink" title="应用层的刷盘"></a>应用层的刷盘</h3><h4 id="python"><a href="#python" class="headerlink" title="python"></a>python</h4><p>python3.3以上使用os.sync。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">os.sync()</span><br><span class="line">Force write of everything to disk.</span><br><span class="line">Availability: Unix.</span><br><span class="line">New in version 3.3.</span><br></pre></td></tr></table></figure></p>
+<p>python2需要引用外部。<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="keyword">import</span> ctypes</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>libc = ctypes.CDLL(<span class="string">"libc.so.6"</span>)</span><br><span class="line"><span class="meta">&gt;&gt;&gt; </span>libc.sync()</span><br><span class="line"><span class="number">0</span></span><br></pre></td></tr></table></figure></p>
+<h4 id="Java"><a href="#Java" class="headerlink" title="Java"></a>Java</h4><p>JDK中有三种方式可以强制文件数据落盘：</p>
+<ul>
+<li><p>调用 FileDescriptor#sync函数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">调用IO_Sync来执行数据同步</span><br><span class="line">IO_Sync在UNIX系统上的定义就是 fsync</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>调用 FileChannel#force函数</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">FileChannel#force 调用 FileDispatcher#force</span><br><span class="line">通过 metaData 参数来区分调用 fsync 和 fdatasync</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>使用 RandomAccessFile 以 rws 或者 rwd 模式打开文件</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">“rws” 还要求对文件的内容或元数据的每个更新都同步写入到底层存储设备。</span><br><span class="line">“rwd” 还要求对文件内容的每个更新都同步写入到底层存储设备。</span><br><span class="line">rws 模式会在 open 文件时传入 O_SYNC 标志位。 </span><br><span class="line">rwd 模式会在 open 文件时传入 O_DSYNC 标志位。</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<h4 id="C语言"><a href="#C语言" class="headerlink" title="C语言"></a>C语言</h4><ul>
+<li>UNIX系统提供了三个系统调用来执行刷新内核缓冲区： sync ， fsync ， fdatasync 。</li>
+</ul>
+<ol>
+<li>sync函数将所有修改过的块缓冲区落盘再返回。</li>
+<li>fsync对指定文件生效，传输内核缓冲区中这个文件的数据落盘再返回。包含数据与文件系统元数据。</li>
+<li>fdatasync仅刷新数据，不刷新文件系统元数据。</li>
+</ol>
+<ul>
+<li>除了上面三个系统调用， open 系统调用在打开文件时，可以设置和同步相关的标志位： O_SYNC 和 O_DSYNC 。</li>
+</ul>
+<ol>
+<li>设置 O_SYNC 的效果相当于是每次 write 后自动调用 fsync 。</li>
+<li>设置 O_DSYNC 的效果相当于是每次 write 后自动调用 fdatasync 。</li>
+</ol>
+<h4 id="总结："><a href="#总结：" class="headerlink" title="总结："></a>总结：</h4><p>从Python和Java可以看出来，这些高级语言，为了保证数据落盘，绕来绕去都回到C语言库的fsync和fdatasync。<br>接下来的文章，我们在文件系统层和块设备层进一步分析。</p>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/04/Linux性能优化实战笔记-CPU篇/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -698,208 +898,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/03/全链路分析数据落盘机制-硬件及驱动层/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Roger K">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="运维深处">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/03/全链路分析数据落盘机制-硬件及驱动层/" itemprop="url">全链路分析数据落盘机制-硬件及驱动层</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-03-27T10:30:40+08:00">
-                2019-03-27
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/体系结构/" itemprop="url" rel="index">
-                    <span itemprop="name">体系结构</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>数据落盘，顾名思义，就是数据写入最终的非易失（Non-volatile）的存储介质，例如HDD（磁性介质）、SSD（半导体介质）等，当服务器故障或异常掉电时，数据做到不丢失。<br>由于硬件故障是经常发生的，对数据安全性要求高的场景，例如金融类的数据库、日志、消息等，数据落盘非常重要，有时甚至是一个企业的底线。<br>本文尝试从底层硬件开始，向上逐层讲到应用，来说明数据落盘的路径，以及如何保证数据落盘，并且重点放在实验验证。</p>
-<h4 id="重点问题及知识点"><a href="#重点问题及知识点" class="headerlink" title="重点问题及知识点"></a>重点问题及知识点</h4><ul>
-<li>当应用发起写入数据的请求返回OK时，数据是否真的到达了磁盘，有哪些因素在起作用？</li>
-<li>应用程序的写入参数、文件系统参数、硬件参数是如何保证数据落盘的？</li>
-<li>今天的x86硬件体系结构，服务器硬件层面，有哪些硬件write cache，断电是否数据丢失？</li>
-<li>数据落盘，很重要的“刷盘”命令，硬件层面到底是什么？</li>
-<li>掉电保护和“刷盘”的关系是什么，是否就不用“刷盘”了？</li>
-<li>SCSI和ATA到底是什么关系，为什么我用的SATA盘识别成SCSI设备？</li>
-</ul>
-<h3 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h3><p>还是我的这台机器，sdb是SATA SSD，sdc是SATA HDD。它们连接在PCH（南桥），走AHCI控制器。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">Summary:	ASRock Z370M-ITX/ac, 1 x Core i5-8400 2.80GHz, 15.2GB / 16GB 2400MT/s DDR4</span><br><span class="line">System:		ASRock Z370M-ITX/ac</span><br><span class="line">Processors:	1 x Core i5-8400 2.80GHz 100MHz FSB (6 cores)</span><br><span class="line">Memory:		15.2GB / 16GB 2400MT/s DDR4 == 2 x 8GB</span><br><span class="line">Disk:		sda (scsi0): 240GB (7%) JBOD == 1 x 240GB Gen3 signaling speed (6.0Gb/s) LITEON-EGT-240N9S</span><br><span class="line">Disk:		sdb: 100GB JBOD == 1 x 100GB SATA 300MB/s INTEL-SSDSA2BZ100G3</span><br><span class="line">Disk:		sdc (scsi2): 1.0TB JBOD == 1 x 1.0TB Gen3 signaling speed (6.0Gb/s) WDC-WD10JPLX-00MBPT1</span><br><span class="line">Disk-Control:	ahci0: Intel 200 Series PCH SATA controller [AHCI mode]</span><br><span class="line">Network:	00:1f.6 (e1000e0): Intel Ethernet Connection (2) I219-V</span><br><span class="line">Network:	02:00.0 (igb0): Intel I211 Gigabit</span><br><span class="line">Network:	03:00.0 (iwlwifi0): Intel Dual Band Wireless-AC 3168NGW [Stone Peak]</span><br><span class="line">OS:		CentOS Linux 7.6.1810 (Core) , Linux 3.10.0-957.5.1.el7.x86_64 x86_64, 64-bit</span><br><span class="line">BIOS:		AMI P1.50 11/16/2017</span><br><span class="line">Hostname:	MiWiFi-R1CM-srv</span><br></pre></td></tr></table></figure></p>
-<h3 id="硬件层"><a href="#硬件层" class="headerlink" title="硬件层"></a>硬件层</h3><h4 id="硬件存储体系简述"><a href="#硬件存储体系简述" class="headerlink" title="硬件存储体系简述"></a>硬件存储体系简述</h4><p>在x86服务器上，本地存储介质的连接方式主要有以下几种，<-> 表示互相连接。</-></p>
-<ul>
-<li>内存 <-> CPU <-> Raid/HBA卡 <-> SATA/SAS HDD/SSD</-></-></-></li>
-<li>内存 <-> CPU <-> PCH <-> SATA HDD/SSD</-></-></-></li>
-<li>内存 <-> CPU <-> PCIe/NVMe SSD</-></-></li>
-</ul>
-<p>CPU包含内存控制器，直连内存。内存一般存放应用自身维护的cache和系统的page cache，内存当然是掉电数据丢失的。<br>为了提升性能，Raid卡、HDD、SSD都有自身的write cache，这些write cache是影响落盘的硬件层面因素。</p>
-<h4 id="HDD-SSD-write-cache"><a href="#HDD-SSD-write-cache" class="headerlink" title="HDD/SSD write cache"></a>HDD/SSD write cache</h4><p>这里简单测试一下就好。我们可以用hdparm来查看、关闭、打开write cache。<br>这里少于ms级的数据写入时间，明显是HDD的write cache的返回。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ata]# hdparm -W /dev/sdc</span><br><span class="line">/dev/sdc:</span><br><span class="line"> write-caching =  1 (on)</span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ata]# dd if=/dev/zero of=/dev/sdc count=1 bs=4k oflag=direct</span><br><span class="line">记录了1+0 的读入</span><br><span class="line">记录了1+0 的写出</span><br><span class="line">4096字节(4.1 kB)已复制，0.000929063 秒，4.4 MB/秒</span><br></pre></td></tr></table></figure></p>
-<p>可以看到，关闭HDD cache对写入的延迟影响是巨大的。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ata]# hdparm -W 0 /dev/sdc</span><br><span class="line">/dev/sdc:</span><br><span class="line"> setting drive write-caching to 0 (off)</span><br><span class="line"> write-caching =  0 (off)</span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ata]# dd if=/dev/zero of=/dev/sdc count=1 bs=4k oflag=direct</span><br><span class="line">记录了1+0 的读入</span><br><span class="line">记录了1+0 的写出</span><br><span class="line">4096字节(4.1 kB)已复制，0.042402 秒，96.6 kB/秒</span><br></pre></td></tr></table></figure></p>
-<h4 id="刷盘指令"><a href="#刷盘指令" class="headerlink" title="刷盘指令"></a>刷盘指令</h4><p>由于write cache enable后，掉电数据丢失，为了保证数据落盘，也就引出了刷盘命令。<br>简单的说，刷盘是把HDD/SSD write cache里的数据写入存储介质（碟片/Nand），数据写入完毕后，再返回OK。</p>
-<p>可以参考wikipedia关于刷盘的介绍。</p>
-<p><a href="https://en.wikipedia.org/wiki/Disk_buffer" target="_blank" rel="noopener">https://en.wikipedia.org/wiki/Disk_buffer</a><br>Cache flushing<br>Data that was accepted in write cache of a disk device will be eventually written to disk platters, provided that no starvation condition occurs as a result of firmware flaw, and that disk power supply is not interrupted before cached writes are forced to disk platters. In order to control write cache, ATA specification included FLUSH CACHE (E7h) and FLUSH CACHE EXT (EAh) commands. These commands cause the disk to complete writing data from its cache, and disk will return good status after data in the write cache is written to disk media. In addition, flushing the cache can be initiated at least to some disks by issuing Soft reset or Standby (Immediate) command.[4]</p>
-<p>在ATA Command Set里，定义了FLUSH CACHE (E7h) 和 FLUSH CACHE EXT (EAh) 这两个指令用于刷盘。<br>这里FLUSH_CACHE是用于支持28bit LBA长度的命令的存储设备的，最大137GB硬盘，目前已经淘汰。<br>今天的刷盘命令，都是指FLUSH_CACHE_EXT，即48bit LBA长度的命令。<br>我们可以看看行业规范如何定义这个命令：</p>
-<p>The FLUSH CACHE EXT command requests the device to flush the volatile write cache. If there is data in the volatile write cache, that data shall be written to the non-volatile media. This command shall not indicate completion until the data is flushed to the non-volatile media or an error occurs. If the volatile write cache is disabled or no volatile write cache is present, the device shall indicate command completion without error.</p>
-<p>链接：<a href="http://www.t13.org/documents/UploadedDocuments/docs2016/di529r14-ATAATAPI_Command_Set_-_4.pdf" target="_blank" rel="noopener">ATAATAPI_Command_Set</a></p>
-<h4 id="掉电保护"><a href="#掉电保护" class="headerlink" title="掉电保护"></a>掉电保护</h4><p>刷盘这个指令当时是为了解决HDD掉电write cache数据一定丢失的问题，在Nand介质出现以后，引入了掉电数据保护功能。<br>掉电数据保护 power loss protection (PLP)，指的是服务器异常断电时，存储设备能把write cache里的数据写回介质。<br>以下总结适用于普通的x86服务器，以下都是Write cache enable场景。</p>
-<ul>
-<li>企业级SSD、包含SATA/SAS/PCIe/NVMe SSD等，通过超级电容保证断电时把write cache中的数据写回Nand。</li>
-<li>消费级SSD由于面向的客户群体及成本考虑，不带掉电数据保护，掉电时cache数据存在丢失几率。</li>
-<li>HDD，无论企业级还是消费级，都不带掉电保护功能。因为驱动12V和5V的马达保证转速并写入数据对功率要求较大。</li>
-<li>Raid卡一般配置电池或超级电容，断电后把write cache的数据临时写入Raid卡的板载Nand颗粒上。当服务器上电后，Raid卡重新把Nand的数据写回HDD。当使用Raid卡时，Raid卡默认关闭HDD的write cache，避免Raid卡不丢数据，但是HDD丢数据。</li>
-</ul>
-<h4 id="什么时候不用刷盘"><a href="#什么时候不用刷盘" class="headerlink" title="什么时候不用刷盘"></a>什么时候不用刷盘</h4><p>由上文可知，支持掉电保护的硬件，是不需要刷盘的。例如：</p>
-<ul>
-<li>数据到达带电池/超级电容的Raid卡write cache，即向上层返回写入OK，可以认为数据落盘（默认关闭HDD write cache）。</li>
-<li>没有raid卡，数据到达企业级SSD的write cache，即向上层返回写入OK，可以认为数据落盘。</li>
-</ul>
-<p>你的设备是否支持掉电保护，请以你实际的硬件设备为准，在引入生产之前，查看供应商的测试报告和自己进行测试。</p>
-<h4 id="什么时候需要刷盘"><a href="#什么时候需要刷盘" class="headerlink" title="什么时候需要刷盘"></a>什么时候需要刷盘</h4><p>如果不支持掉电保护同时write cache enable，就需要刷盘，也就是下发FLUSH_CACHE_EXT，并等待这条指令返回OK，才可以认为数据落盘。</p>
-<h3 id="驱动层"><a href="#驱动层" class="headerlink" title="驱动层"></a>驱动层</h3><p>在硬件（包含硬件firmware）之上，就是驱动层了，由于我用的是SATA HDD/SSD，ATA驱动是SCSI子系统的一部分，所以这里重点看SCSI子系统如何下发FLUSH_CACHE_EXT命令。如果你使用的是PCIe/NVMe SSD，则不经过SCSI子系统，NVMe驱动直接到块设备层。</p>
-<p>关于SCSI子系统、NVMe的IO路径，可以参考这幅著名的Linux IO stack图。<br>连接：<a href="https://www.thomas-krenn.com/en/wiki/Linux_Storage_Stack_Diagram" target="_blank" rel="noopener">Linux Storage Stack Diagram
-</a></p>
-<h4 id="SCSI和ATA的转换"><a href="#SCSI和ATA的转换" class="headerlink" title="SCSI和ATA的转换"></a>SCSI和ATA的转换</h4><p>这里有一个非常关键的知识点：在Linux内核里，除了NVMe以外，存储设备都是在SCSI体系内管理的。应用层的读写操作，会以bio的形式提交给block层，然后，block会把bio转换成request，并把该request加入到专为某个SCSI device服务的request queue中，接下来会有内核线程适时地从该queue中摘取request，并转换成SCSI cmd，再转换成ATA cmd，最终交由AHCI Controller（对于AHCI，实际上会把ATA cmd转换成FIS结构）发向硬盘执行。<br>参考：<a href="http://www.cnblogs.com/raymondpang/articles/4469500.html" target="_blank" rel="noopener">request到ATA cmd的转换过程</a></p>
-<p>我们接下来看看下发的SCSI的具体指令，打开scsi的日志信息，注意这里是-1。<br>参考：<a href="https://blog.csdn.net/fhqfghgdx1993/article/details/79915918" target="_blank" rel="noopener">Linux 开启 SCSI 日志调试功能</a><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">scsi_logging_level 值可以在 boot 命令行设置也可以开启设备后在 /proc 文件系统中设置：</span><br><span class="line">-1   - Enable scsi events to syslog.         // 开启所有scsi log</span><br><span class="line">0    - Disable scsi events to syslog.        // 关闭所有scsi log</span><br><span class="line">命令:</span><br><span class="line">    echo 0/-1 &gt; /proc/sys/dev/scsi/logging_level</span><br></pre></td></tr></table></figure></p>
-<p>我们知道sync命令就有刷盘的功能，执行一次再看看dmesg日志。这里下发了CDB 35H<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[47505.162954] sd 0:0:0:0: [sda] tag#5 Send: scmd 0xffff97b61d238fc0</span><br><span class="line">[47505.162965] sd 0:0:0:0: [sda] tag#5 CDB: Synchronize Cache(10) 35 00 00 00 00 00 00 00 00 00</span><br><span class="line">[47505.163957] sd 0:0:0:0: [sda] tag#5 Done: SUCCESS Result: hostbyte=DID_OK driverbyte=DRIVER_OK</span><br><span class="line">[47505.163974] sd 0:0:0:0: [sda] tag#5 CDB: Synchronize Cache(10) 35 00 00 00 00 00 00 00 00 00</span><br><span class="line">[47505.163985] sd 0:0:0:0: [sda] tag#5 scsi host busy 1 failed 0</span><br><span class="line">[47505.164003] sd 0:0:0:0: Notifying upper driver of completion (result 0)</span><br><span class="line">[47505.164013] sd 0:0:0:0: [sda] tag#5 sd_done: completed 0 of 0 bytes</span><br><span class="line">[47505.164023] sd 0:0:0:0: [sda] tag#5 0 sectors total, 0 bytes done.</span><br></pre></td></tr></table></figure></p>
-<p>在SCSI命令集里，35h指令对应的是SYNCHRONIZE CACHE，也就是刷盘。<br>The SYNCHRONIZE CACHE (10) command (see table 199) requests that the device server ensure that the specified logical blocks have their most recent data values recorded in non-volatile cache and/or on the medium.<br>参考：<a href="https://www.seagate.com/files/staticfiles/support/docs/manual/Interface%20manuals/100293068k.pdf" target="_blank" rel="noopener">SCSI Commands Reference Manual</a></p>
-<h4 id="刷盘命令的转换"><a href="#刷盘命令的转换" class="headerlink" title="刷盘命令的转换"></a>刷盘命令的转换</h4><p>SCSI的SYNCHRONIZE CACHE，ATA的FLUSH CACHE EXT，这是两条刷盘命令。<br>我用的是SATA HDD/SSD，是在SCSI体系里使用ATA设备，刷盘命令也需要转换。<br>通过搜索官方文档，可以看到libata-scsi.c里的ata_scsi_flush_xlat函数，就是做这个事。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">ata_scsi_flush_xlat</span><br><span class="line">Translate SCSI SYNCHRONIZE CACHE command</span><br><span class="line"></span><br><span class="line">Description</span><br><span class="line">Sets up an ATA taskfile to issue FLUSH CACHE or FLUSH CACHE EXT.</span><br></pre></td></tr></table></figure></p>
-<p>参考：<a href="https://www.kernel.org/doc/html/latest/driver-api/libata.html#c.ata_scsi_flush_xlat" target="_blank" rel="noopener">The Linux driver implementer’s API guide » libATA Developer’s Guide</a></p>
-<p>跟踪一下sync的在libata内核模块的执行路径，这里用到systemtap。<br>在ata_scsi_queuecmd里，可以看到 SCSI cmd -&gt; ATA cmd -&gt; FIS 这个过程。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# cat libata.stp </span><br><span class="line">#!/usr/bin/stap -v</span><br><span class="line"></span><br><span class="line">probe module(&quot;libata&quot;).function(&quot;*&quot;).call &#123;</span><br><span class="line">    printf (&quot;Call  : %s -&gt; %s\n&quot;, thread_indent(2) ,ppfunc())</span><br><span class="line">&#125;</span><br><span class="line">probe module(&quot;libata&quot;).function(&quot;*&quot;).return &#123;</span><br><span class="line">    printf (&quot;Return: %s &lt;- %s\n&quot;, thread_indent(-2) ,ppfunc())</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R1CM-srv ~]# stap libata.stp </span><br><span class="line">Call  :      0 sync(9551):  -&gt; ata_scsi_queuecmd</span><br><span class="line">Call  :      2 sync(9551):    -&gt; ata_scsi_find_dev</span><br><span class="line">Call  :      3 sync(9551):      -&gt; __ata_scsi_find_dev</span><br><span class="line">Call  :      4 sync(9551):        -&gt; ata_find_dev</span><br><span class="line">Return:      5 sync(9551):        &lt;- ata_find_dev</span><br><span class="line">Return:      6 sync(9551):      &lt;- __ata_scsi_find_dev</span><br><span class="line">Return:      7 sync(9551):    &lt;- ata_scsi_find_dev</span><br><span class="line">Call  :      8 sync(9551):    -&gt; ata_qc_new_init</span><br><span class="line">Return:      8 sync(9551):    &lt;- ata_qc_new_init</span><br><span class="line">Call  :     10 sync(9551):    -&gt; ata_scsi_flush_xlat</span><br><span class="line">Return:     11 sync(9551):    &lt;- ata_scsi_flush_xlat</span><br><span class="line">Call  :     12 sync(9551):    -&gt; ata_std_qc_defer</span><br><span class="line">Return:     13 sync(9551):    &lt;- ata_std_qc_defer</span><br><span class="line">Call  :     13 sync(9551):    -&gt; ata_qc_issue</span><br><span class="line">Call  :     14 sync(9551):      -&gt; ata_tf_to_fis</span><br><span class="line">Return:     15 sync(9551):      &lt;- ata_tf_to_fis</span><br><span class="line">Return:     16 sync(9551):    &lt;- ata_qc_issue</span><br><span class="line">Return:     17 sync(9551):  &lt;- ata_scsi_queuecmd</span><br></pre></td></tr></table></figure></p>
-<p>查看ata_tf_to_fis函数的结构体tf-&gt;command，可以看到sync转换之后，发出的ATA CMD是EAh，也就是上一章里的FLUSH CACHE EXT (EAh) commands。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R1CM-srv ~]# cat ata_tf_to_fis.stp </span><br><span class="line">#!/usr/bin/stap -v</span><br><span class="line"></span><br><span class="line">probe module(&quot;libata&quot;).function(&quot;ata_tf_to_fis&quot;).call &#123;</span><br><span class="line">    printf (&quot;Call  : %s -&gt; %s -&gt; %4x\n&quot;, thread_indent(0) ,ppfunc(), $tf-&gt;command)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">Call  :      0 sync(10614): -&gt; ata_tf_to_fis -&gt;   ea</span><br></pre></td></tr></table></figure></p>
-<p>至此，通过驱动层，我们知道，在SCSI子系统里，刷盘是SYNCHRONIZE CACHE这条SCSI命令，经过转换为ATA命令，发到磁盘上是FLUSH CACHE EXT。</p>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><ul>
-<li>带掉电保护的设备，不需要刷盘。</li>
-<li>write cache enable时，不带掉电保护的设备，需要刷盘。</li>
-<li>ATA标准是T13，刷盘命令是Flush cache ext，代码EAh。</li>
-<li>SCSI标准是T10，刷盘命令是Synchronize Cache，代码35h。</li>
-<li>bio转换成request，request转换成SCSI命令，SCSI命令转换为ATA命令，AHCI把ATA命令转换为FIS结构发向硬盘。</li>
-<li>libata-scsi.c里的ata_scsi_flush_xlat函数进行刷盘命令从SCSI到ATA的转换。</li>
-</ul>
-<h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><p>本文引用了很多文章，这里附上额外的一些参考，一并致谢。</p>
-<p><a href="https://unix.stackexchange.com/questions/144561/in-what-sense-does-sata-talk-scsi-how-much-is-shared-between-scsi-and-ata" target="_blank" rel="noopener">In what sense does SATA “talk” SCSI? How much is shared between SCSI and ATA?</a></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -951,7 +949,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">8</span>
+                  <span class="site-state-item-count">9</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -973,7 +971,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">7</span>
+                  <span class="site-state-item-count">9</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
