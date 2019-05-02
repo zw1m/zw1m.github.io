@@ -293,6 +293,227 @@
   
   
   <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/05/内存性能测试及分析/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Roger K">
+      <meta itemprop="description" content>
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="运维深处">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+                
+                <a class="post-title-link" href="/2019/05/内存性能测试及分析/" itemprop="url">内存性能测试及分析</a></h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-05-02T16:25:45+08:00">
+                2019-05-02
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/性能分析/" itemprop="url" rel="index">
+                    <span itemprop="name">性能分析</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        
+          
+            <h3 id="基础知识"><a href="#基础知识" class="headerlink" title="基础知识"></a>基础知识</h3><h4 id="CPU体系构成"><a href="#CPU体系构成" class="headerlink" title="CPU体系构成"></a>CPU体系构成</h4><p>Node -&gt; Socket -&gt; Core -&gt; Logical Processor/Thread</p>
+<ul>
+<li>一个NUMA Node可以有一个或者多个Socket（也称为多路CPU），一个多核Socket显然包含多个Core，一个Core如果打开HT则变成两个Logical Processor（也称为Thread）。两个Logical Processor只是OS内部看到的，还是属于同一个Core。</li>
+<li>HT是使用的流水线技术，但是两个Logical Processor仍然共享Core的执行单元，所以计算密集型应用从HT技术上没有收益。</li>
+</ul>
+<h4 id="MEM体系构成"><a href="#MEM体系构成" class="headerlink" title="MEM体系构成"></a>MEM体系构成</h4><p>channel -&gt; DIMM -&gt; rank -&gt; chip -&gt; bank -&gt; row/column</p>
+<ul>
+<li>举例：一个i7 CPU支持两个Channel（双通道），每个Channel上可以插俩个DIMM，而每个DIMM由两个rank构成，8个chip组成一个rank。由于现在多数内存颗粒的位宽是8bit，而CPU带宽是64bit，所以经常是8个颗粒可以组成一个rank。内存条2R X 8的意思是由2个rank组成，每个rank有8个内存颗粒。</li>
+<li>Chip拆开来看，它是由8个Bank组成，每个Bank核心是个一个存储矩阵，就像一个大方格子阵。这个格子阵有很多列（Column）和很多行（Row），这样我们想存取某个格子，只需要告知是哪一行哪一列就行了。</li>
+</ul>
+<h4 id="延迟及cycles"><a href="#延迟及cycles" class="headerlink" title="延迟及cycles"></a>延迟及cycles</h4><ol>
+<li>各种寄存器，用来存储本地变量和函数参数，访问一次需要1 cycle，耗时小于1ns；</li>
+<li>L1 Cache，一级缓存，本地 core 的缓存，分成 32K 的数据缓存 L1d 和 32k 指令缓存 L1i，访问 L1 需要3 cycles，耗时大约 1ns；</li>
+<li>L2 Cache，二级缓存，本地 core 的缓存，被设计为 L1 缓存与共享的 L3 缓存之间的缓冲，大小为 256K，访问 L2 需要 12 cycles，耗时大约 3ns；</li>
+<li>L3 Cache，三级缓存，在同插槽的所有 core 共享 L3 缓存，分为多个 2M 的段，访问 L3 需要 38 cycles，耗时大约 12ns；</li>
+<li>Memory，访问需要 120-240 cycles，耗时大约 60-120ns；</li>
+</ol>
+<h3 id="测试工具stream"><a href="#测试工具stream" class="headerlink" title="测试工具stream"></a>测试工具stream</h3><p>Stream是内存带宽及延迟性能的测试工具。<br>官网如下：</p>
+<ul>
+<li><a href="http://www.cs.virginia.edu/stream/" target="_blank" rel="noopener">http://www.cs.virginia.edu/stream/</a></li>
+</ul>
+<p>源码地址，最新的版本是v5.10，2013-01-17。</p>
+<ul>
+<li><a href="http://www.cs.virginia.edu/stream/FTP/Code/" target="_blank" rel="noopener">http://www.cs.virginia.edu/stream/FTP/Code/</a></li>
+</ul>
+<p>基于stream的自动化测试工具，免配置</p>
+<ul>
+<li><a href="https://github.com/gregs1104/stream-scaling" target="_blank" rel="noopener">https://github.com/gregs1104/stream-scaling</a></li>
+</ul>
+<p>参考资料：HPC高性能计算项目Stream内存带宽测试报告.docx</p>
+<ul>
+<li><a href="https://max.book118.com/html/2018/1103/8143026101001131.shtm" target="_blank" rel="noopener">https://max.book118.com/html/2018/1103/8143026101001131.shtm</a></li>
+</ul>
+<h4 id="环境"><a href="#环境" class="headerlink" title="环境"></a>环境</h4><p>还是我的这台台式机。2条DDR4内存，每条8GB，运行在3000MT/s，双通道。<br>理论最大带宽：3000MT/s <em> 64bit / 8bit / 1024 </em> 2 = 46.875GB/s<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R4A-srv ~]# perl hwconfig </span><br><span class="line">hwconfig: warning: cpu0/cpufreq/scaling_governor should be &apos;ondemand&apos;, not &apos;powersave&apos;; see http://tiny.corp.hwconfig.com/xNR1cs</span><br><span class="line">Summary:	ASRock Z370M-ITX/ac, 1 x Core i5-8400 2.80GHz, 15.3GB / 16GB 3000MT/s DDR4</span><br><span class="line">System:		ASRock Z370M-ITX/ac</span><br><span class="line">Processors:	1 x Core i5-8400 2.80GHz 100MHz FSB (6 cores)</span><br><span class="line">Memory:		15.3GB / 16GB 3000MT/s DDR4 == 2 x 8GB</span><br><span class="line">Disk:		sda (scsi1): 100GB (15%) JBOD == 1 x 100GB SATA 300MB/s INTEL-SSDSA2BZ100G3</span><br><span class="line">Disk:		sdb: 100GB JBOD == 1 x 100GB SATA 300MB/s INTEL-SSDSA2BZ100G3</span><br><span class="line">Disk-Control:	ahci0: Intel 200 Series PCH SATA controller [AHCI mode]</span><br><span class="line">Network:	00:1f.6 (e1000e0): Intel Ethernet Connection (2) I219-V</span><br><span class="line">Network:	02:00.0 (igb0): Intel I211 Gigabit</span><br><span class="line">Network:	03:00.0 (iwlwifi0): Intel Dual Band Wireless-AC 3168NGW [Stone Peak]</span><br><span class="line">OS:		Fedora 30 (Thirty), Linux 5.0.7-300.fc30.x86_64 x86_64, 64-bit</span><br><span class="line">BIOS:		AMI P1.50 11/16/2017</span><br><span class="line">Hostname:	MiWiFi-R4A-srv</span><br></pre></td></tr></table></figure></p>
+<h4 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h4><ol>
+<li>stream申请了 a[], b[], c[] 三个巨大的数组进行四种数学运算。四种数学运算如下：</li>
+</ol>
+<ul>
+<li>Copy: c = a;</li>
+<li>Scale: b = 3 * c;</li>
+<li>Add: c = a + b;</li>
+<li>Triad: a = b + c * 3;</li>
+</ul>
+<ol start="2">
+<li><p>每个数组元素默认是double型，占用8个字节。</p>
+</li>
+<li><p>stream具有空间局部性，对TLB、Cache友好。为了避免干扰，数组的大小要超过CPU三级缓存的大小。官方推荐是4倍。我的机器三级缓存是9216KB。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">cat /sys/devices/system/cpu/cpu5/cache/index3/level </span><br><span class="line">3</span><br><span class="line">cat /sys/devices/system/cpu/cpu5/cache/index3/size </span><br><span class="line">9216K</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<ul>
+<li>修改STREAM_ARRAY_SIZE这个变量可以改变数组大小，我这里算法如下：三级缓存9216KB乘以1024换算成字节，再除以每个数组元素8字节，再乘以官方推荐的4倍。<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; 9216 * 1024 / 8 * 4</span><br><span class="line">4718592</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>STREAM_ARRAY_SIZE=4718592 就是适合我这台机器的配置。4718592乘以每个数组元素8字节，就是下文每个数组的36MB，由于有abc三个数组，所以需要108MB的内存空间。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Array size = 4718592 (elements), Offset = 0 (elements)</span><br><span class="line">Memory per array = 36.0 MiB (= 0.0 GiB).</span><br><span class="line">Total memory required = 108.0 MiB (= 0.1 GiB).</span><br><span class="line">Each kernel will be executed 10 times.</span><br></pre></td></tr></table></figure></p>
+<p>在5.10版本的stream里，STREAM_ARRAY_SIZE默认是10000000，作者说在20MB的三级缓存以内，都是适用的。</p>
+<ol start="4">
+<li><p>另外，STREAM_ARRAY_SIZE要足够大，超过20个clock-ticks，也就是CPU cycles。在测试的时候会提示，在Linux下一般都没有问题。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">Your clock granularity/precision appears to be 1 microseconds.</span><br><span class="line">Each test below will take on the order of 5926 microseconds.</span><br><span class="line">   (= 5926 clock ticks)</span><br><span class="line">Increase the size of the arrays if this shows that</span><br><span class="line">you are not getting at least 20 clock ticks per test.</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>对于多核系统，加上 -fopenmp 这个编译参数。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gcc -O -fopenmp stream.c -o stream_omp</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>#pragma命令是向编译器提供额外信息的标准方法，#pragma omp parallel for告诉编译器使用OpenMP自动以多线程的方式运行for循环中的内容，需要注意数据不存在依赖。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">pragma</span> omp parallel for</span></span><br><span class="line">    <span class="keyword">for</span> (j=<span class="number">0</span>; j&lt;STREAM_ARRAY_SIZE; j++)</span><br><span class="line">        c[j] = a[j];</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>可以看到-O3优化级别，在Copy这项测试上性能有较大的提升。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R4A-srv stream-scaling]# gcc -O2 stream.c ;./a.out  | grep Copy</span><br><span class="line">Copy:           22346.5     0.007202     0.007160     0.007232</span><br><span class="line">[root@MiWiFi-R4A-srv stream-scaling]# gcc -O3 stream.c ;./a.out  | grep Copy</span><br><span class="line">Copy:           32212.8     0.004978     0.004967     0.004990</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<h4 id="性能测试"><a href="#性能测试" class="headerlink" title="性能测试"></a>性能测试</h4><p>直接进行测试，多线程场景下，Copy性能反而下降：</p>
+<ul>
+<li>这个问题先放在这里。多线程情况下，存在更多其它开销，影响了性能，待求证具体开销在哪里，可能是context-switches。<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R4A-srv stream-scaling]# gcc -O3 stream.c;./a.out | grep -E &apos;(Function|Copy:|Scale:|Add:|Triad:)&apos;</span><br><span class="line">Function    Best Rate MB/s  Avg time     Min time     Max time</span><br><span class="line">Copy:           32532.9     0.004924     0.004918     0.004932</span><br><span class="line">Scale:          21560.4     0.007441     0.007421     0.007469</span><br><span class="line">Add:            24615.1     0.009767     0.009750     0.009789</span><br><span class="line">Triad:          24394.9     0.009858     0.009838     0.009890</span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R4A-srv stream-scaling]# gcc -O3 -fopenmp stream.c;./a.out | grep -E &apos;(Function|Copy:|Scale:|Add:|Triad:)&apos;</span><br><span class="line">Function    Best Rate MB/s  Avg time     Min time     Max time</span><br><span class="line">Copy:           30512.4     0.005257     0.005244     0.005268</span><br><span class="line">Scale:          22475.3     0.007143     0.007119     0.007170</span><br><span class="line">Add:            24577.2     0.009786     0.009765     0.009806</span><br><span class="line">Triad:          24460.1     0.009828     0.009812     0.009842</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+<p>也可以使用stream-scaling测试性能即可。这个脚本识别CPU核心数，通过测试不同核心数下的性能。通过读取CPU的cache大小，计算出合适的STREAM_ARRAY_SIZE。</p>
+<ul>
+<li>但是在我这台机器上，没有考虑三级缓存是同一个Socket的6个core共享这个情况，重复计算了三级缓存，这点需要注意。<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R4A-srv stream-scaling]# ./stream-scaling </span><br><span class="line">...</span><br><span class="line">Function    Best Rate MB/s  Avg time     Min time     Max time</span><br><span class="line">Copy:           30856.3     0.013801     0.013763     0.013844</span><br><span class="line">Scale:          22146.1     0.019212     0.019176     0.019277</span><br><span class="line">Add:            23729.2     0.026920     0.026845     0.027144</span><br><span class="line">Triad:          23754.1     0.026879     0.026817     0.026973</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+</li>
+</ul>
+
+          
+        
+      
+    </div>
+    
+    
+    
+
+    
+
+    
+
+    
+
+    <footer class="post-footer">
+      
+
+      
+
+      
+
+      
+      
+        <div class="post-eof"></div>
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+    
+      
+
+  
+
+  
+  
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
     <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/04/3DXPoint与Optane学习笔记整理/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -641,159 +862,6 @@
 
 
     
-      
-
-  
-
-  
-  
-  
-
-  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
-  
-  
-  
-  <div class="post-block">
-    <link itemprop="mainEntityOfPage" href="http://blog.zw1m.com/2019/04/CPU的缓存失效和分支预测的例子/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="name" content="Roger K">
-      <meta itemprop="description" content>
-      <meta itemprop="image" content="/images/avatar.gif">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="运维深处">
-    </span>
-
-    
-      <header class="post-header">
-
-        
-        
-          <h1 class="post-title" itemprop="name headline">
-                
-                <a class="post-title-link" href="/2019/04/CPU的缓存失效和分支预测的例子/" itemprop="url">CPU的缓存失效和分支预测的例子</a></h1>
-        
-
-        <div class="post-meta">
-          <span class="post-time">
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-calendar-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">发表于</span>
-              
-              <time title="创建于" itemprop="dateCreated datePublished" datetime="2019-04-14T10:47:06+08:00">
-                2019-04-14
-              </time>
-            
-
-            
-
-            
-          </span>
-
-          
-            <span class="post-category">
-            
-              <span class="post-meta-divider">|</span>
-            
-              <span class="post-meta-item-icon">
-                <i class="fa fa-folder-o"></i>
-              </span>
-              
-                <span class="post-meta-item-text">分类于</span>
-              
-              
-                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/性能分析/" itemprop="url" rel="index">
-                    <span itemprop="name">性能分析</span>
-                  </a>
-                </span>
-
-                
-                
-              
-            </span>
-          
-
-          
-            
-          
-
-          
-          
-
-          
-
-          
-
-          
-
-        </div>
-      </header>
-    
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-      
-
-      
-        
-          
-            <h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>最近学习CPU关于cache-miss和branch-miss的相关知识，从网上找了两个案例来验证。</p>
-<ul>
-<li>计算机体系局部性原理：它更倾向于引用最近引用过的数据项（时间局部性），或者这个数据周围的数据（空间局部性）。</li>
-<li>硬件层，缓存，分支预测。</li>
-<li>操作系统：缓存，预读</li>
-<li>应用层：Cache、CDN</li>
-</ul>
-<h3 id="cache-miss"><a href="#cache-miss" class="headerlink" title="cache-miss"></a>cache-miss</h3><p>这个案例里，一维数组在内存是连续空间。当二维数组按行操作时，CPU缓存能命中，不用反复去内存里读取数据。但是按列操作时，由于每行数组数据量较大，会击穿CPU缓存，每次操作都需要重新去内存里读取一行。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[])</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> a[<span class="number">1000</span>][<span class="number">1000</span>];</span><br><span class="line">    <span class="keyword">if</span>(argc == <span class="number">1</span>) &#123;</span><br><span class="line">        <span class="keyword">int</span> i,j;</span><br><span class="line">        <span class="keyword">for</span>(i = <span class="number">0</span>; i &lt; <span class="number">1000</span>; ++i) &#123;</span><br><span class="line">            <span class="keyword">for</span>(j = <span class="number">0</span>; j &lt; <span class="number">1000</span>; ++j) &#123;</span><br><span class="line">               a[i][j] = <span class="number">0</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">else</span> <span class="keyword">if</span> (argc == <span class="number">2</span>) &#123;</span><br><span class="line">        <span class="keyword">int</span> i,j;</span><br><span class="line">        <span class="keyword">for</span>(i = <span class="number">0</span>; i &lt; <span class="number">1000</span>; ++i) &#123;</span><br><span class="line">            <span class="keyword">for</span>(j = <span class="number">0</span>; j &lt; <span class="number">1000</span>; ++j) &#123;</span><br><span class="line">                a[j][i] = <span class="number">0</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>使用perf来跟踪cache miss情况，当传入参数时，是按列操作。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R4A-srv ctest]<span class="comment"># perf stat -e L1-dcache-load-misses ./test</span></span><br><span class="line"></span><br><span class="line"> Performance counter stats <span class="keyword">for</span> <span class="string">'./test'</span>:</span><br><span class="line"></span><br><span class="line">            88,690      L1-dcache-load-misses                                       </span><br><span class="line"></span><br><span class="line">       0.003754295 seconds time elapsed</span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R4A-srv ctest]<span class="comment"># perf stat -e L1-dcache-load-misses ./test cachemiss</span></span><br><span class="line"></span><br><span class="line"> Performance counter stats <span class="keyword">for</span> <span class="string">'./test cachemiss'</span>:</span><br><span class="line"></span><br><span class="line">         1,079,688      L1-dcache-load-misses                                       </span><br><span class="line"></span><br><span class="line">       0.002821310 seconds time elapsed</span><br></pre></td></tr></table></figure></p>
-<h3 id="branch-miss"><a href="#branch-miss" class="headerlink" title="branch-miss"></a>branch-miss</h3><p>这个案例里，先排序再比较，能提升分支预测准确性，大幅度提升性能。<br><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;algorithm&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;ctime&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;iostream&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">// 产生随机数数组，随机数在0-255之间</span></span><br><span class="line">    <span class="keyword">const</span> <span class="keyword">unsigned</span> arraySize = <span class="number">32768</span>;</span><br><span class="line">    <span class="keyword">int</span> data[arraySize];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">unsigned</span> c = <span class="number">0</span>; c &lt; arraySize; ++c)</span><br><span class="line">        data[c] = <span class="built_in">std</span>::rand() % <span class="number">256</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 关键：加上这句后程序运行明显会更快！</span></span><br><span class="line">    <span class="comment">//std::sort(data, data + arraySize);</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 测试</span></span><br><span class="line">    <span class="keyword">clock_t</span> start = clock();</span><br><span class="line">    <span class="keyword">long</span> <span class="keyword">long</span> sum = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">unsigned</span> i = <span class="number">0</span>; i &lt; <span class="number">100000</span>; ++i)</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">unsigned</span> c = <span class="number">0</span>; c &lt; arraySize; ++c)</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="keyword">if</span> (data[c] &gt;= <span class="number">128</span>)  <span class="comment">//条件分支</span></span><br><span class="line">                sum += data[c];</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">double</span> elapsedTime = <span class="keyword">static_cast</span>&lt;<span class="keyword">double</span>&gt;(clock() - start) / CLOCKS_PER_SEC;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; elapsedTime &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">    <span class="built_in">std</span>::<span class="built_in">cout</span> &lt;&lt; <span class="string">"sum = "</span> &lt;&lt; sum &lt;&lt; <span class="built_in">std</span>::<span class="built_in">endl</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
-<p>使用perf来查看分支预测成功率，可以看到排序后性能提升3倍以上。<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R4A-srv ctest]<span class="comment"># perf stat ./testb</span></span><br><span class="line">18.31</span><br><span class="line">sum = 314931600000</span><br><span class="line"></span><br><span class="line"> Performance counter stats <span class="keyword">for</span> <span class="string">'./testb'</span>:</span><br><span class="line"></span><br><span class="line">      18315.489297      task-clock (msec)         <span class="comment">#    1.000 CPUs utilized          </span></span><br><span class="line">                11      context-switches          <span class="comment">#    0.001 K/sec                  </span></span><br><span class="line">                 4      cpu-migrations            <span class="comment">#    0.000 K/sec                  </span></span><br><span class="line">               369      page-faults               <span class="comment">#    0.020 K/sec                  </span></span><br><span class="line">    72,874,694,304      cycles                    <span class="comment">#    3.979 GHz                    </span></span><br><span class="line">    29,585,265,782      instructions              <span class="comment">#    0.41  insn per cycle         </span></span><br><span class="line">     6,565,177,618      branches                  <span class="comment">#  358.449 M/sec                  </span></span><br><span class="line">     1,603,125,199      branch-misses             <span class="comment">#   24.42% of all branches        </span></span><br><span class="line"></span><br><span class="line">      18.316115315 seconds time elapsed</span><br><span class="line"></span><br><span class="line">[root@MiWiFi-R4A-srv ctest]<span class="comment"># perf stat ./testc</span></span><br><span class="line">5.88</span><br><span class="line">sum = 314931600000</span><br><span class="line"></span><br><span class="line"> Performance counter stats <span class="keyword">for</span> <span class="string">'./testc'</span>:</span><br><span class="line"></span><br><span class="line">       5888.781567      task-clock (msec)         <span class="comment">#    1.000 CPUs utilized          </span></span><br><span class="line">                 8      context-switches          <span class="comment">#    0.001 K/sec                  </span></span><br><span class="line">                 4      cpu-migrations            <span class="comment">#    0.001 K/sec                  </span></span><br><span class="line">               369      page-faults               <span class="comment">#    0.063 K/sec                  </span></span><br><span class="line">    23,351,472,182      cycles                    <span class="comment">#    3.965 GHz                    </span></span><br><span class="line">    29,556,013,915      instructions              <span class="comment">#    1.27  insn per cycle         </span></span><br><span class="line">     6,559,924,468      branches                  <span class="comment"># 1113.970 M/sec                  </span></span><br><span class="line">           486,175      branch-misses             <span class="comment">#    0.01% of all branches        </span></span><br><span class="line"></span><br><span class="line">       5.889261494 seconds time elapsed</span><br></pre></td></tr></table></figure></p>
-<h3 id="查看CPU-cache结构"><a href="#查看CPU-cache结构" class="headerlink" title="查看CPU cache结构"></a>查看CPU cache结构</h3><p>可以使用lstopo-no-graphics，它属于hwloc这个包。<br><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">[root@MiWiFi-R4A-srv ctest]# lstopo-no-graphics</span><br><span class="line">Machine (31GB)</span><br><span class="line">  Package L#0 + L3 L#0 (9216KB)</span><br><span class="line">    L2 L#0 (256KB) + L1d L#0 (32KB) + L1i L#0 (32KB) + Core L#0 + PU L#0 (P#0)</span><br><span class="line">    L2 L#1 (256KB) + L1d L#1 (32KB) + L1i L#1 (32KB) + Core L#1 + PU L#1 (P#1)</span><br><span class="line">    L2 L#2 (256KB) + L1d L#2 (32KB) + L1i L#2 (32KB) + Core L#2 + PU L#2 (P#2)</span><br><span class="line">    L2 L#3 (256KB) + L1d L#3 (32KB) + L1i L#3 (32KB) + Core L#3 + PU L#3 (P#3)</span><br><span class="line">    L2 L#4 (256KB) + L1d L#4 (32KB) + L1i L#4 (32KB) + Core L#4 + PU L#4 (P#4)</span><br><span class="line">    L2 L#5 (256KB) + L1d L#5 (32KB) + L1i L#5 (32KB) + Core L#5 + PU L#5 (P#5)</span><br><span class="line">  Misc(MemoryModule)</span><br><span class="line">  Misc(MemoryModule)</span><br><span class="line">  HostBridge L#0</span><br><span class="line">    PCI 8086:3e92</span><br><span class="line">      GPU L#0 "card0"</span><br><span class="line">      GPU L#1 "renderD128"</span><br><span class="line">      GPU L#2 "controlD64"</span><br><span class="line">    PCI 8086:a282</span><br><span class="line">      Block(Disk) L#3 "sda"</span><br><span class="line">      Block(Disk) L#4 "sdb"</span><br><span class="line">      Block(Disk) L#5 "sdc"</span><br><span class="line">    PCIBridge</span><br><span class="line">      PCI 8086:1539</span><br><span class="line">        Net L#6 "enp2s0"</span><br><span class="line">    PCIBridge</span><br><span class="line">      PCI 8086:24fb</span><br><span class="line">        Net L#7 "wlp3s0"</span><br><span class="line">    PCI 8086:15b8</span><br><span class="line">      Net L#8 "enp0s31f6"</span><br></pre></td></tr></table></figure></p>
-
-          
-        
-      
-    </div>
-    
-    
-    
-
-    
-
-    
-
-    
-
-    <footer class="post-footer">
-      
-
-      
-
-      
-
-      
-      
-        <div class="post-eof"></div>
-      
-    </footer>
-  </div>
-  
-  
-  
-  </article>
-
-
-    
   </section>
 
   
@@ -845,7 +913,7 @@
               
                 <a href="/archives/">
               
-                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-count">11</span>
                   <span class="site-state-item-name">日志</span>
                 </a>
               </div>
@@ -867,7 +935,7 @@
               
               <div class="site-state-item site-state-tags">
                 <a href="/tags/index.html">
-                  <span class="site-state-item-count">10</span>
+                  <span class="site-state-item-count">12</span>
                   <span class="site-state-item-name">标签</span>
                 </a>
               </div>
